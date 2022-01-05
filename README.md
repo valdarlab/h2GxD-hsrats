@@ -1,4 +1,4 @@
-#h2GxD-hsrats
+# h2GxD-hsrats
 
 This document describes how to reproduce heritability analysis of various phenotypes in response to high- or low-fat diet in heterogeneous stock rats, as performed by Deal et al (2022). 
 
