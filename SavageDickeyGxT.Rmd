@@ -1,0 +1,266 @@
+---
+title: "Savage-Dickey Bayes Factors for the HS rat HFD project"
+author: "Will Valdar"
+date: "Sept 14, 2021"
+output:
+  pdf_document:
+    fig_height: 4
+    fig_width: 9
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+#setwd("/Users/ellenrisemberg/Documents/ValdarFerris/HS_geneXdiet")
+```
+
+# Introduction to Bayes Factors
+
+The Bayes factor (BF) is a quantity that measures the evidence in favor of one model vs another. Suppose the two competing models were a null model $M_0$ and an alternative model $M_1$, then BF is the ratio,
+\[
+  \text{BF}=\frac{p(\text{data}|M_1)}{p(\text{data}|M_0)}\,,
+\]
+where $p(\text{data}|M_1)$ is the marginal likelihood of the data given model $M_1$, and $p(\text{data}|M_0)$ is the marginal likelihood of the data given model $M_0$. Marginal likelihoods are difficult to calculate in most cases. However, Savage and Dickey (19??) showed that if $M_0$ and $M_1$ differ by a single parameter, specifically if, $M_0$ is simply $M_1$ with $\theta=0$, then the BF can be calculated as the following ratio of $M_1$'s prior and posterior:
+\[
+  \text{BF}=\frac{p(\theta=0)}{p(\theta=0|\text{data})}
+\]
+where $p(\theta=0)$ is the prior probability density that $\theta=0$, and $p(\theta=0|\text{data})$ is the posterior density of $\theta_0$. If BF>1 then this must be because the posterior for $\theta=0$ is lower than the prior, ie, data is providing evidence against $\theta=0$ and towards $\theta\neq 0$. If BF<1, then the data provides evidence for $\theta=0$. If BF=1, then the data has given us no information regarding $\theta$.
+
+# Bayes factors in the HFD project
+
+In the HS rat project, we want to quantify the evidence against ordinary heritability (G) being zero, and against GxT heritability being zero. So in each case, we can plot the prior and posteriors for the parameter in question, and see how the evidence for the parameter (G or GxT) being zero changes from prior to posterior, quantifying this with the BF, where BF>1 is evidence that G (or GxT) exists. 
+
+Obviously, a BF of just over 1 is still not that interesting, so we need a way to match BF values with scientific interpretations. Kass and Raftery (1995) proposed the following scale:
+
+BF      1/BF      $\log_{10}$BF  Interpretation
+------  --------- -----------    --------------
+1-3.2   1-0.3     0-1/2          Not worth mentioning
+3.2-10  0.3-0.1   1/2-1          Substantial 
+10-100  0.1-0.001 1-2            Strong
+$>100$  <0.001    >2             Decisive
+
+with evidence for zero (ie, against G or GxT) being the corresponding reciprocals of these numbers.
+
+## R code for functions
+
+```{r, echo=FALSE}
+library(logspline)
+source("sample_from_approx_prior.R") # Andrew's prior sampler code
+source("utils.R")
+
+ifow <- function(test, yes, no){
+  if(test){return(yes)} 
+  no
+}
+
+load.to.object <- function(fname){
+  eh <- new.env()
+  load(fname, envir=eh)
+  x <- get(ls(eh)[1], envir=eh)
+}
+
+calc.h2 <- function(x, burnin=1000, thin=1){
+  nall <- dim(x$alpha)[3] # get number of timesteps
+  s <- seq(from=burnin+1, to=nall, by=thin)
+  # y ~ litter.size + study  + z       + (1|cohort)                + (1|kinship)            + (z|kinship)
+  #     alpha1        alpha2   alpha3    u ~ N(, sigma_sq_lambda)    N(, sigma_sq_beta[1])    N(, sigma_sq_beta[2])
+  noise <- c(x$sigma_sq[,s])
+  g <- c(x$sigma_sq_beta[1,,s])
+  gxt <- c(x$sigma_sq_beta[2,,s])
+  cohort <- c(x$sigma_sq_lambda[,s])
+  total <- noise + g + gxt + cohort
+  data.frame(noise=noise/total, g=g/total, gxt=gxt/total, cohort=cohort/total)
+}
+
+plot.post <- function(post, prior.lsp, main="", ylim=NULL, digits=3){
+  n <- 100
+  xx <- (0:(n-1))/(n-1)
+  yy <- dlogspline(xx, lsp.prior)
+  d <- list(
+    g = list(post = post$g,  col = "blue", string="G"),
+    gxt = list(post = post$gxt,  col = "red", string="GxT"),
+    cohort = list(post = post$cohort,  col = "orange", string="cohort"),
+    noise = list(post = post$noise,  col = "gray", string="noise")
+  )
+  for (vc in names(d)){
+    yy <- c(yy, dlogspline(xx, d[[vc]]$post$lsp))
+    if (!is.null(d[[vc]]$post$bf)){
+      d[[vc]]$string <- paste0(d[[vc]]$string, "  (BF=", round(d[[vc]]$post$bf, digits=digits), ")")
+    }
+  }
+  if (is.null(ylim)){
+    ylim <- c(0, max(yy))
+  }
+  plot(lsp.prior, xlim=0:1, ylim=ylim, lty=2, las=1, 
+       xlab="intraclass correlation coefficient (heritability)", ylab="posterior density", main=main)
+  for (vc in names(d)){
+    plot(d[[vc]]$post$lsp, lty=1, add=TRUE, col=d[[vc]]$col)
+  }
+  legend("topright", bty="n",
+          legend=c("prior", sapply(d, function(x){x$string})),
+          col=c("black", sapply(d, function(x){x$col})),
+          lty=c(2, rep(1, length(d)))
+          )
+}
+
+calc.BF <- function(prior, post, xvalue=0, plotit=TRUE, pheno.string="phenotype", 
+                    param.string="", ylim=NULL, digits=3){
+  # calculate logspline approximations
+  lsp.prior <- prior #ifow(inherits(prior, "logspline"), prior, logspline(prior, lbound=0, ubound=1))
+  lsp.post <- post #ifow(inherits(post, "logspline"), post, logspline(post, lbound=0, ubound=1))
+  # estimate density at x
+  prior.at.x <- dlogspline(xvalue, lsp.prior)
+  post.at.x <- dlogspline(xvalue, lsp.post)
+  # calc Bayes factor
+  BF <- prior.at.x / post.at.x
+  # plotting
+  if (plotit){
+    n <- 100
+    xx <- (0:(n-1))/(n-1)
+    yy.prior <- dlogspline(xx, lsp.prior)
+    yy.post <- dlogspline(xx, lsp.post)
+    if (is.null(ylim)){
+      ylim <- c(0, max(c(yy.prior, yy.post)))
+    }
+    plot(lsp.post, xlim=0:1, ylim=ylim, lty=1, las=1, xlab=param.string, ylab="density",
+        main=paste0(pheno.string, "\nBF for ", param.string, " is ", round(BF, digits=digits)))
+    plot(lsp.prior, lty=2, xlim=0:1, add=TRUE)
+  }
+  data.frame(
+    phenotype=pheno.string, 
+    parameter=param.string,
+    xvalue=xvalue, 
+    prior.at.x=prior.at.x,
+    post.at.x=post.at.x,
+    BF=BF,
+    logBF=log10(BF))
+}
+```
+
+### Prior
+
+The prior used for each variance parameter  $v\in\{\sigma^2, \sigma^2_\text{cohort}, \sigma^2_\text{G}, \sigma^2_\text{GxT}\}$ was an inverse gamma with shape=-1 and rate=0. Heritabilty was defined as the fraction
+\[
+  h^2 = \frac{\sigma^2_\text{G}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxT}}\,,
+\]
+and GxT heritability as the fraction
+\[
+  h^2_\text{GxT} = \frac{\sigma^2_\text{GxT}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxT}}\,.
+\]
+The implicit prior on either of these fractions looks like the density below.
+
+```{r cache=TRUE, echo=FALSE}
+# get samples from the prior
+#prior <- c(sample_from_approx_prior(maxVal=1e5, nBins=1e6, sh=-1, rt=0, numVar=3)) # 4 million samples
+#saveRDS(prior, file="priorsamples.RDS")
+#prior <- readRDS("priorsamples.RDS")
+#lsp.prior <- logspline(prior, lbound=0, ubound=1)
+#saveRDS(lsp.prior, file="priorlsp.RDS")
+lsp.prior <- readRDS("source_data/priorlsp.RDS")
+plot(lsp.prior, lty=3, xlim=0:1, main="Heritability prior", xlab="heritability", ylab="density", las=1)
+```
+
+## Results
+
+### All posteriors
+
+The following plots show, for each phenotype/sex combination, the prior (dashed line) and posterior (full line) of ordinary heritability (G) or GxT heritability. In the title of each plot is the BF, the ratio between the dashed and full line at 0. As mentioned above, the larger the BF is above 1, the more evidence there is *against* that type of heritability being zero; BF values below 1 indicate the evidence in favor of zero heritability. 
+```{r cache=TRUE, echo=FALSE}
+# Convert posterior samples to logspline densities
+mcmc.files <- list.files("derived_data/posterior_samples/", full.names = TRUE)
+phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
+ensure_directory("results/posterior_densities")
+lsp.files <- file.path("results/posterior_densities", paste0(phenos, "_lsp.RDS"))
+
+for (i in 1:length(phenos)){
+  if (file.exists(lsp.files[i])) {
+    next
+  }
+  cat("Logsplining ", phenos[i], "\n")
+  post.samples <- load.to.object(mcmc.files[i])
+  h2 <- calc.h2(post.samples, burnin=1000, thin=10)
+  lsp.list <- list()
+  for (var in names(h2)){
+    lsp.list[[var]]$lsp <- logspline(h2[[var]], lbound=0, ubound=1)
+  }
+  saveRDS(lsp.list, file=lsp.files[i])
+}
+```
+
+
+```{r cache=TRUE, echo=FALSE}
+results <- NULL
+par(mfrow=c(1,2))
+ensure_directory("results/plots/")
+for (i in 1:length(phenos)){
+  #cat("Processing ", phenos[i], "\n")
+  post <- readRDS(lsp.files[i])
+  result.g <- calc.BF(prior=lsp.prior, post=post$g$lsp, pheno.string = phenos[i], param.string="G", plotit=FALSE)
+  post$g$bf <- result.g$BF
+  result.gxt <- calc.BF(prior=lsp.prior, post$gxt$lsp, pheno.string = phenos[i], param.string="GxT", plotit = FALSE)
+  post$gxt$bf <- result.gxt$BF
+  result.cohort <- calc.BF(prior=lsp.prior, post$cohort$lsp,pheno.string = phenos[i], param.string="cohort", plotit = FALSE)
+  post$cohort$bf <- result.cohort$BF
+  ## plotting
+  plot.post(post, prior=prior.lsp, main=sub("_LMM", "", phenos[i]))
+  if (TRUE) { ## Save plots to directory
+    pdf(file.path("results/plots", paste0(phenos[i], ".pdf")), width=4.5, height=4)
+    plot.post(post, prior=prior.lsp, main=sub("_LMM", "", phenos[i]))
+    dev.off()
+  }
+  results <- rbind(results, result.g, result.gxt, result.cohort)
+}
+```
+
+## Tables of Bayes factors
+
+The table below also gives the logBF, which is the logarithm to the base 10 of the BF. In this case, logBF=0 is no evidence, logBF>0 is positive evidence, logBF>0 is evidence against.
+
+### Bayes factors for ordinary heritability (G)
+```{r echo=FALSE, cache=TRUE}
+tab <- results
+tab$BF <- formatC(tab$BF, digits=5, drop0trailing=TRUE, big.mark=",")
+tab$logBF <- round(tab$logBF, digits=3)
+tab$prior.at.x <- round(tab$prior.at.x, digits=3)
+tab$post.at.x <- round(tab$post.at.x, digits=3)
+kable(tab[tab$parameter=="G", -c(2,3)], row.names=FALSE)
+```
+
+### Bayes factors for GxT heritabilty (GxT)
+```{r echo=FALSE}
+kable(tab[tab$parameter=="GxT", -c(2,3)], row.names=FALSE)
+```
+
+### Bayes factors for cohort effect
+```{r echo=FALSE}
+kable(tab[tab$parameter=="cohort", -c(2,3)], row.names=FALSE)
+```
+
+
+# Plots of Bayes factors for all phenotypes
+```{r fig.height=8, fig.width=7, echo=FALSE, cache=TRUE}
+plot.logBFs <- function(res, ...){
+  oldpar <- par()
+  par(mar=c(5, 20, 5, 2))
+  plot(res$logBF, nrow(res):1, axes=FALSE, ylab="", type="o", pch=c(1,1,19,19), ...)
+  axis(2, at=nrow(res):1, labels=res$phenotype, las=1)
+  abline(v=c(-1,0,1), lty=2, col=c("gray", "black", "gray"))
+  axis(1)
+  axis(3)
+}
+plot.logBFs(results[results$parameter=="G", ], main="logBF for G", 
+            xlab="logBF for G", xlim=c(-2,10))
+cat("\n\n\n\n\n\n\n") # force plots on separate pages
+plot.logBFs(results[results$parameter=="GxT", ], main="logBF for GxT", 
+            xlab="logBF for GxT", xlim=c(-2,3))
+cat("\n\n\n\n\n\n\n") # force plots on separate pages
+plot.logBFs(results[results$parameter=="cohort", ], main="logBF for cohort", 
+            xlab="logBF for cohort", xlim=c(-2,6))
+```
+```{r}
+write.csv(results, file="results/BF_results.csv")
+```
+
+
