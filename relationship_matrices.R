@@ -31,13 +31,13 @@ hist(diag(K)) # show diagonal elements
 #-------------------------Make sex-specific matrices---------------------------#
 ii <- rownames(K) %in% male.dat$Access_ID
 K.male <- K[ii, ii]
-heatmap(K.male, main=paste0("Males, n=", sum(ii)))
-range(diag(K.male))
+# heatmap(K.male, main=paste0("Males, n=", sum(ii)))
+# range(diag(K.male))
 
 ii <- rownames(K) %in% female.dat$Access_ID
 K.female <- K[ii, ii]
-heatmap(K.female, main=paste0("Females, n=", sum(ii)))
-range(diag(K.female))
+# heatmap(K.female, main=paste0("Females, n=", sum(ii)))
+# range(diag(K.female))
 
 #----------------------------Save kinship matrices-----------------------------#
 ensure_directory("derived_data")
