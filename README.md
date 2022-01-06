@@ -42,14 +42,6 @@ Run the following Rscript to create additive relationship matrices:
 Rscript relationship_matrices.R 
 ```
 
-Run the following Rscript to sample from the prior distribution used to calculate Bayes Factor: 
-
-```
-Rscript prior_dist.R
-```
-
-This will create an RData object `priorlsp.RDS`. We recommend that you visually inspect the prior distribution (i.e. with `plot(lsp.prior, lty=3, xlim=0:1, main="Heritability prior", xlab="heritability", ylab="density", las=1)`), and make sure it appears smooth (see Notes section for instructions on how to open an RStudio session). 
-
 Analysis
 --------
 
