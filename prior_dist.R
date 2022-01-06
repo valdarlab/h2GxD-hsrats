@@ -8,4 +8,4 @@ prior <- c(sample_from_approx_prior(maxVal=1e5, nBins=1e6, sh=-1, rt=0, numVar=3
 # saveRDS(prior, file="priorsamples.RDS")
 # prior <- readRDS("priorsamples.RDS")
 lsp.prior <- logspline(prior, lbound=0, ubound=1)
-saveRDS(lsp.prior, file="priorlsp.RDS")
+saveRDS(lsp.prior, file="derived_data/priorlsp.RDS")
