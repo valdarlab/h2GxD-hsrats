@@ -26,7 +26,7 @@ cat("Missing id for sires {", paste(missing.sires, collapse=", "), "}, convertin
 cat("Missing id for dams {", paste(missing.dams, collapse=", "), "}, converting to founders\n")
 
 K <- Amatrix(strict.ped) # calc additive relationship matrix for entire pedigree
-hist(diag(K)) # show diagonal elements
+#hist(diag(K)) # show diagonal elements
 
 #-------------------------Make sex-specific matrices---------------------------#
 ii <- rownames(K) %in% male.dat$Access_ID
