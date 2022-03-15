@@ -33,7 +33,7 @@ for sex in ${sexes[@]}; do
 		fi
 		if [ $mode == "bash" ]; then 
 			logfile="logs/${sex}-${pheno}.log"
-			nohup Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno} > ${logfile} &
+			nohup Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno} > ${logfile} 2>&1 < /dev/null &
 		fi
 	done
 done
