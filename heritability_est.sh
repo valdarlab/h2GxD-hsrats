@@ -15,11 +15,12 @@ if [ "$mode" != "bash" ] && [ "$mode" != "slurm" ]; then
 	exit 
 fi 
 
-mkdir logs
+mkdir -p logs
 
 phenotypes=("Total_AUC" "HarvWeight" "RetroFat_norm" "FastGluc" \
 	"FastIns" "SWIM" "CLIMB" "FLOAT" "REST_EPISODE_COUNT_5" \
-	"MOVEMENT_EPISODE_COUNT_5" "VERTICAL_EPISODE_COUNT_5")
+	"MOVEMENT_EPISODE_COUNT_5" "VERTICAL_EPISODE_COUNT_5" \
+	"EpiFat_norm" "OmentalFat_norm" "ClosedJunc" "OpenJunc")
 
 sexes=("male" "female") 
 

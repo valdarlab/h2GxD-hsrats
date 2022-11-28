@@ -34,7 +34,7 @@ Run the following R script to transform and clean up the raw data located in the
 Rscript data_transformations.R
 ```
 
-The following files (one for each sex) will be produced in the `derived_data` directory: `transformed_data_female-G3package.csv` and `transformed_data_male-G3package.csv`. 
+The following files (one for each sex, and one combined) will be produced in the `derived_data` directory: `transformed_data_female-G3package.csv`, `transformed_data_male-G3package.csv`, and `transformed_data_all-G3package.csv`. 
 
 Run the following Rscript to create additive relationship matrices:
 
@@ -42,8 +42,18 @@ Run the following Rscript to create additive relationship matrices:
 Rscript relationship_matrices.R 
 ```
 
+Three relatedness matrices (male, female and combined) will be created and stored in .txt files in the `derived_data` directory. 
+
 Analysis
 --------
+
+Run the following Rscript to perform covariate analysis:
+
+```
+Rscript anova.R
+```
+
+Results of ANOVA analyses will be saved in the `results` directory. 
 
 Run the following bash script to build the models and calculate model statistics. For each sex/phenotype combination, this script will spin off a background job that calls `pheno_heritability_est.R`. 
 
@@ -64,10 +74,9 @@ When analysis is complete, flat files will be produced in the `posterior_samples
 Results
 -------
 
-Create a results directory, and combine the csv files from the previous step into one file: 
+In the results directory created by the ANOVA analysis, combine the csv files from the previous step into one file: 
 
 ```
-mkdir results
 awk 'FNR==1 && NR!=1 {next;}{print}' derived_data/heritability_stats/*.csv > results/combined.csv
 ```
 

@@ -41,6 +41,7 @@ K.female <- K[ii, ii]
 
 #----------------------------Save kinship matrices-----------------------------#
 ensure_directory("derived_data")
+write.table(K, file="derived_data/relatedness_matrix_MetBehThesis.txt")
 write.table(K.male, file="derived_data/relatedness_matrix_MetBehThesis_male.txt")
 write.table(K.female, file="derived_data/relatedness_matrix_MetBehThesis_female.txt")
 

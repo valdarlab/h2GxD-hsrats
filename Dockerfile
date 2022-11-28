@@ -1,6 +1,7 @@
 FROM rocker/verse
-RUN R -e "install.packages(\"readxl\")"
 RUN R -e "install.packages(\"tidyverse\")"
+RUN R -e "install.packages(\"lme4qtl\")"
+RUN R -e "install.packages(\"pbkrtest\")"
 RUN R -e "install.packages(\"coda\")"
 RUN R -e "install.packages(\"pheatmap\")"
 RUN R -e "install.packages(\"regress\")"

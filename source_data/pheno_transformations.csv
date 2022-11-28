@@ -1,0 +1,16 @@
+﻿Phenotype,Transformation
+HarvWeight,natlog
+RetroFat_norm,cbrt
+EpiFat_norm,sqrt
+OmentalFat_norm,sqrt
+Total_AUC,natlog
+FastGluc,inv
+FastIns,cbrt
+ClosedJunc,raw
+OpenJunc,raw
+SWIM,squared
+CLIMB,natlog
+FLOAT,cbrt
+REST_EPISODE_COUNT_5,natlog
+MOVEMENT_EPISODE_COUNT_5,natlog
+VERTICAL_EPISODE_COUNT_5,raw
