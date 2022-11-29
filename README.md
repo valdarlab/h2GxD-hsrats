@@ -74,7 +74,7 @@ When analysis is complete, flat files will be produced in the `posterior_samples
 Results
 -------
 
-In the results directory created by the ANOVA analysis, combine the csv files from the previous step into one file: 
+Combine the csv files from the previous step into one file, which will be stored in the results directory created by the ANOVA analysis:
 
 ```
 awk 'FNR==1 && NR!=1 {next;}{print}' derived_data/heritability_stats/*.csv > results/combined.csv
