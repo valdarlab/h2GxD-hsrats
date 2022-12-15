@@ -17,10 +17,10 @@ fi
 
 mkdir -p logs
 
-phenotypes=("Total_AUC" "HarvWeight" "RetroFat_norm" "FastGluc" \
-	"FastIns" "SWIM" "CLIMB" "FLOAT" "REST_EPISODE_COUNT_5" \
-	"MOVEMENT_EPISODE_COUNT_5" "VERTICAL_EPISODE_COUNT_5" \
-	"EpiFat_norm" "OmentalFat_norm" "ClosedJunc" "OpenJunc")
+phenotypes=("HarvWeight" "RetroFat_norm" "EpiFat_norm" \
+	"OmentalFat_norm" "Total_AUC" "FastGluc" "FastIns" \
+	"REST_EPISODE_COUNT_5" "MOVEMENT_EPISODE_COUNT_5" \
+	"VERTICAL_EPISODE_COUNT_5" "FLOAT" "SWIM" "CLIMB")
 
 sexes=("male" "female") 
 
@@ -30,7 +30,7 @@ for sex in ${sexes[@]}; do
 	for pheno in ${phenotypes[@]}; do
 		if [ $mode == "slurm" ]; then 
 			logfile="logs/${sex}-${pheno}.out"
-			sbatch --mem=30G -t 24:00:00 --output=${logfile} --wrap="module add r; Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno}"
+			sbatch --mem=30G -t 48:00:00 --output=${logfile} --wrap="module add r; Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno}"
 		fi
 		if [ $mode == "bash" ]; then 
 			logfile="logs/${sex}-${pheno}.log"
