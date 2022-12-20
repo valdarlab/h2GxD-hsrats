@@ -8,6 +8,8 @@ Sex and genetic specific effects on behavioral, but not metabolic, responses to 
 Environment prep
 ----------------
 
+This project uses a Docker container to produce an environment similar to that used in the original analysis (e.g. R v4.1.3 and R package versions available on April 1, 2022). In order to run this container you will need [Docker](https://docs.docker.com/get-docker/) installed. 
+
 Build the docker container:
 
 ```
@@ -87,6 +89,8 @@ Rscript -e 'library(rmarkdown); rmarkdown::render("SavageDickeyGxT.Rmd", "pdf_do
 ```
 
 In addition to the `SavageDicketGxT.pdf` report, `results/BF_results.csv` will be produced and `results/plots/` and `results/posterior_densities/` directories will be populated with one file per sex/phenotype combination. 
+
+**Note** that this step requires almost 15 GB of memory. If you are using Docker for Mac, you will need to increase the memory limit above the default 2 GB.
 
 Notes
 -----
