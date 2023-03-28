@@ -1,6 +1,6 @@
 library(MASS)
 library(Matrix)
-library(pheatmap)
+#library(pheatmap)
 library(regress)
 
 MCMC_heritability<-function(phenotype,G,num_samples=50000){
@@ -59,7 +59,9 @@ MCMC_heritability<-function(phenotype,G,num_samples=50000){
         beta_mean<-colSums(t((1/sigma_sq[i])*beta_cov%*%t(X))*(y-mu[i]))
 
         beta_mat[,i]<-mvrnorm(1,beta_mean,beta_cov)
-        if((num_samples-i)%%1000==0){cat(num_samples-i,' samples remaining.\n')}
+        if((num_samples-i)%%1000==0){
+          cat(i,"/", num_samples, "samples.\n")
+        }
     }
     return(list(beta=beta_mat,mu=mu,sigma_sq=sigma_sq,sigma_sq_gamma=sigma_sq_gamma,h_sq=h_sq))
 }
@@ -333,8 +335,9 @@ MCMC_heritability_mixed_genetic_and_non_genetic<-function(fixed_form,random_form
         h_sq[,cc,i]<-numers/denom
 
       }
-      if((num_samples-i)%%100==0){cat(num_samples-i,' samples remaining.\n')}
-      #cat(num_samples-i,' samples remaining.\n')
+      if((num_samples-i)%%100==0){
+        cat(i,"/", num_samples, "samples.\n")
+      }
     }
     alpha_mat_rescale<-alpha_mat*1/scl_fctr
     u_mat_rescale<-u_mat*1/scl_fctr

@@ -10,8 +10,8 @@ done
 
 if [ -z "$mode" ]; then mode="bash"; fi # default mode is bash 
 
-if [ "$mode" != "bash" ] && [ "$mode" != "slurm" ]; then
-	echo "ERROR: -m flag must be set to \"bash\" or \"slurm\"" 
+if [ "$mode" != "bash" ] && [ "$mode" != "slurm" ] && [ "$mode" != "dryrun" ]; then
+	echo "ERROR: -m flag must be set to \"bash\", \"slurm\", or \"dryrun\""
 	exit 
 fi 
 
@@ -28,13 +28,18 @@ for sex in ${sexes[@]}; do
 	datapath="derived_data/transformed_data_${sex}-G3package.csv"
 	matpath="derived_data/relatedness_matrix_MetBehThesis_${sex}.txt"
 	for pheno in ${phenotypes[@]}; do
+            cmd="Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno} --num_samples=100000 --num_chains=3 --burnin=1000 --thin=10"
 		if [ $mode == "slurm" ]; then 
 			logfile="logs/${sex}-${pheno}.out"
-			sbatch --mem=30G -t 48:00:00 --output=${logfile} --wrap="module add r; Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno}"
+			sbatch --mem=30G -t 48:00:00 --output=${logfile} --wrap="module add r; ${cmd}"
 		fi
 		if [ $mode == "bash" ]; then 
 			logfile="logs/${sex}-${pheno}.log"
-			nohup Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno} > ${logfile} 2>&1 < /dev/null &
+			eval "nohup ${cmd} > ${logfile} 2>&1 < /dev/null &"
+		fi
+		if [ $mode == "dryrun" ]; then 
+			logfile="logs/${sex}-${pheno}.log"
+			echo "${cmd} > ${logfile} 2>&1"
 		fi
 	done
 done

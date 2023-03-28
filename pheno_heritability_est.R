@@ -1,6 +1,6 @@
 library(coda)
-library(pheatmap)
-library(regress)
+#library(pheatmap)
+#library(regress)
 library(MASS)
 library(Matrix)
 
@@ -19,10 +19,11 @@ data$cohort_f <- factor(data$Cohort)
 
 G <- as.matrix(read.table(matpath, sep=" ", check.names = FALSE))*2
 
-num_chains <- 3
-num_samples <- 100000  
-burnin <- 1000
-thin <- 10 
+num_chains  <- cmdline.integer("num_chains", default=3)
+num_samples <- cmdline.integer("num_samples", default=100000)
+burnin      <- cmdline.integer("burnin", default=1000)
+thin        <- cmdline.integer("thin", default=10) 
+
 
 #----------------------------------Analysis------------------------------------#
 ensure_directory("derived_data/posterior_samples")
