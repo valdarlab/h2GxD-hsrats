@@ -3,8 +3,8 @@ library(pbkrtest) # Kenward-Roger method
 library(MASS)
 source("utils.R")
 
-dat <- read.csv("derived_data/transformed_data_all-G3package.csv")
-K <- as.matrix(read.table("derived_data/relatedness_matrix_MetBehThesis.txt", 
+dat <- read.csv("derived_data/transformed_data_All-G3package.csv")
+K <- as.matrix(read.table("derived_data/relatedness_matrix_MaleFemale_PilotThesis.txt", 
                           sep=" ", check.names = FALSE))
 
 pred_terms <- c('Study', 'Litter_Size', 'I(Litter_Size^2)', 'Sex', 'Diet', 'Sex:Diet')

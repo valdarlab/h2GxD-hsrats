@@ -11,6 +11,7 @@ RUN R -e "install.packages('MASS', repos = 'https://mran.microsoft.com/snapshot/
 RUN R -e "install.packages('Matrix', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
 RUN R -e "install.packages('logspline', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
 RUN R -e "install.packages('AGHmatrix', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
+RUN R -e "install.packages('QTLRel', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
 
 # install LaTeX packages
 RUN tlmgr update --self --all

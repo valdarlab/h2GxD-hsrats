@@ -22,16 +22,16 @@ phenotypes=("HarvWeight" "RetroFat_norm" "EpiFat_norm" \
 	"REST_EPISODE_COUNT_5" "MOVEMENT_EPISODE_COUNT_5" \
 	"VERTICAL_EPISODE_COUNT_5" "FLOAT" "SWIM" "CLIMB")
 
-sexes=("male" "female") 
+sexes=("Male" "Female") 
 
 for sex in ${sexes[@]}; do
 	datapath="derived_data/transformed_data_${sex}-G3package.csv"
-	matpath="derived_data/relatedness_matrix_MetBehThesis_${sex}.txt"
+	matpath="derived_data/relatedness_matrix_${sex}_PilotThesis.txt"
 	for pheno in ${phenotypes[@]}; do
             cmd="Rscript pheno_heritability_est.R --args --datapath=${datapath} --matpath=${matpath} --sex=${sex} --pheno=${pheno} --num_samples=100000 --num_chains=3 --burnin=1000 --thin=10"
 		if [ $mode == "slurm" ]; then 
 			logfile="logs/${sex}-${pheno}.out"
-			sbatch --mem=30G -t 48:00:00 --output=${logfile} --wrap="module add r; ${cmd}"
+			sbatch --mem=30G -t 72:00:00 --output=${logfile} --wrap="module add r; ${cmd}"
 		fi
 		if [ $mode == "bash" ]; then 
 			logfile="logs/${sex}-${pheno}.log"

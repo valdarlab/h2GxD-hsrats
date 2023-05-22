@@ -54,7 +54,7 @@ fdat$z <- ifelse(fdat$Diet == "HFD", 1, -1)
 
 #--------------------------------Save to csv-----------------------------------#
 ensure_directory("derived_data")
-write_csv(dat, file = "derived_data/transformed_data_all-G3package.csv")
-write_csv(mdat, file = "derived_data/transformed_data_male-G3package.csv")
-write_csv(fdat, file = "derived_data/transformed_data_female-G3package.csv")
+write_csv(dat, file = "derived_data/transformed_data_All-G3package.csv")
+write_csv(mdat, file = "derived_data/transformed_data_Male-G3package.csv")
+write_csv(fdat, file = "derived_data/transformed_data_Female-G3package.csv")
 
