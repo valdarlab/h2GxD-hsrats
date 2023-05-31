@@ -3,7 +3,6 @@
 # additional information, please see the package documentation at this address:                     #
 #      https://cran.r-project.org/web/packages/QTLRel/QTLRel.pdf                                    #
 #####################################################################################################
-
 library(dplyr)
 library(QTLRel)
 
@@ -64,14 +63,14 @@ kinship_matrixM <- as.data.frame(kinship(pedigreeM, pedigreeM$id))
 kinship_matrixF <- as.data.frame(kinship(pedigreeF, pedigreeF$id))
 
 # save full kinship matrices
-write.table(kinship_matrix, file = 'derived_data/full_relatedness_matrix_MaleFemale_PilotThesis.txt')
-write.table(kinship_matrixM, file = 'derived_data/full_relatedness_matrix_Male_PilotThesis.txt')
-write.table(kinship_matrixF, file = 'derived_data/full_relatedness_matrix_Female_PilotThesis.txt')
+# write.table(kinship_matrix, file = 'derived_data/full_relatedness_matrix_MaleFemale_PilotThesis.txt')
+# write.table(kinship_matrixM, file = 'derived_data/full_relatedness_matrix_Male_PilotThesis.txt')
+# write.table(kinship_matrixF, file = 'derived_data/full_relatedness_matrix_Female_PilotThesis.txt')
 
 # since you created the pedigree that was fed to kinship(), you know the exact order 
 # of all of the animals in the matrix. You can subset the relatedness matrix and 
 # extract only the animals/generation that you are interested in. 
-n = 512 # 513 total mice
+n = 512 # 513 total rats
 kinship_subset <- kinship_matrix[(nrow(kinship_matrix)-n):nrow(kinship_matrix), 
                                  (ncol(kinship_matrix)-n):ncol(kinship_matrix)]
 n = 324 # 325 male rats 
@@ -82,7 +81,7 @@ kinship_subsetF <- kinship_matrixF[(nrow(kinship_matrixF)-n):nrow(kinship_matrix
                                    (ncol(kinship_matrixF)-n):ncol(kinship_matrixF)]
 
 # save subsetted kinship matrices 
-write.table(kinship_subset, 'derived_data/relatedness_matrix_MaleFemale_PilotThesis.txt')
-write.table(kinship_subsetM, 'derived_data/relatedness_matrix_Male_PilotThesis.txt')
-write.table(kinship_subsetF, 'derived_data/relatedness_matrix_Female_PilotThesis.txt')
+write.table(kinship_subset*2, 'derived_data/relatedness_matrix_MaleFemale_PilotThesis.txt')
+write.table(kinship_subsetM*2, 'derived_data/relatedness_matrix_Male_PilotThesis.txt')
+write.table(kinship_subsetF*2, 'derived_data/relatedness_matrix_Female_PilotThesis.txt')
 
