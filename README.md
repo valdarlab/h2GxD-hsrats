@@ -44,7 +44,7 @@ Run the following Rscript to create additive relationship matrices:
 Rscript kinship_using_QTLRel_gen35_microbiome.R 
 ```
 
-Three relatedness matrices (male, female and combined) will be created and stored in .txt files in the `derived_data` directory. 
+Three pedigrees and three relatedness matrices (male, female and combined) will be created and stored in .txt files in the `derived_data` directory. 
 
 Analysis
 --------
