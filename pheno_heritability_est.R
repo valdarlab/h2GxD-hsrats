@@ -29,7 +29,7 @@ thin        <- cmdline.integer("thin", default=10)
 ensure_directory("derived_data/posterior_samples")
 outpath = paste("derived_data/posterior_samples/MCMC_", pheno, "_", sex, sep="")
 
-fixed_form <- as.formula(ifelse(sex == "male", paste(pheno, "~ Litter_Size + Study + z"), 
+fixed_form <- as.formula(ifelse(sex == "Male", paste(pheno, "~ Litter_Size + Study + z"), 
                                 paste(pheno, "~ Litter_Size + z")))
 MCMC_results <- MCMC_heritability_mixed_genetic_and_non_genetic(fixed_form = fixed_form,
                     random_form = ~ cohort_f-1, genetic_form = ~ z, dat = data, 
@@ -46,10 +46,10 @@ median_subsample_list <- mcmc.list()
 for(cc in 1:3){
   intercept_coef<-MCMC_results_subsample$alpha[1,cc,]
   litter_size_coef<-MCMC_results_subsample$alpha[2,cc,]
-  if(sex == "male"){
+  if(sex == "Male"){
     StudyThesis_coef<-MCMC_results_subsample$alpha[3,cc,]
     diet_coef<-MCMC_results_subsample$alpha[4,cc,]
-  } else if (sex == "female"){
+  } else if (sex == "Female"){
     diet_coef<-MCMC_results_subsample$alpha[3,cc,]
   }
   heritability_genetic_component_a<-MCMC_results_subsample$sigma_sq_beta[1,cc,]/(MCMC_results_subsample$sigma_sq_beta[1,cc,]+MCMC_results_subsample$sigma_sq_beta[2,cc,]+MCMC_results_subsample$sigma_sq_lambda[cc,]+MCMC_results_subsample$sigma_sq[cc,])
