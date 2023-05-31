@@ -63,11 +63,13 @@ Run the following bash script to build the models and calculate model statistics
 bash heritability_est.sh 
 ```
 
-The default behavior is to create background jobs using standard bash commands. To create the job via SLURM, set the `-m` flag to "slurm": 
+The default behavior is to create background jobs using standard bash commands. To create the job on a cluster via slurm, set the `-m` flag to "slurm": 
 
 ```
 bash heritability_est.sh -m slurm 
 ```
+
+The time limit for slurm jobs is specified at 3 days. The longest running phenotype on UNC's research computing cluster was 48 hours. 
 
 In either case, a `logs` directory will be created where stdout from each job will print to its own `.log` file. You can track the progress of the program for each phenotype here. 
 
