@@ -5,8 +5,8 @@ library(tidyverse)
 setwd('/Users/ellenrisemberg/Documents/ValdarFerris/GxD0522')
 
 #dat <- read.csv("Copy of All Data MaleFemale RawData merged for sex LMM.csv")
-dat <- read.csv('source_data/raw_data_all-G3package.csv')
-#dat <- read.csv('derived_data/transformed_data_All-G3package.csv')
+#dat <- read.csv('source_data/raw_data_all-G3package.csv')
+dat <- read.csv('derived_data/transformed_data_All-G3package.csv')
 
 fadat <- dat %>% select('HarvWeight', 'RetroFat_norm', 'EpiFat_norm', 'OmentalFat_norm', 
                         'Total_AUC', 'FastGluc', 'ClosedJunc', 'OpenJunc', 'SWIM',

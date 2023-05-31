@@ -20,7 +20,8 @@ mkdir -p logs
 phenotypes=("HarvWeight" "RetroFat_norm" "EpiFat_norm" \
 	"OmentalFat_norm" "Total_AUC" "FastGluc" "FastIns" \
 	"REST_EPISODE_COUNT_5" "MOVEMENT_EPISODE_COUNT_5" \
-	"VERTICAL_EPISODE_COUNT_5" "FLOAT" "SWIM" "CLIMB")
+	"VERTICAL_EPISODE_COUNT_5" "FLOAT" "SWIM" "CLIMB" \
+	"OpenJunc", "ClosedJunc")
 
 sexes=("Male" "Female") 
 
