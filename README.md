@@ -63,7 +63,7 @@ Run the following Rscript to perform covariate analysis:
 Rscript anova.R
 ```
 
-Results of ANOVA analyses will be saved in the `results` directory. 
+Results of ANOVA analyses will be saved in the `results` directory. This includes p-values for the significance of each term in predicting each phenotype, as well as heritability estimates for each phenotype. 
 
 Run the following bash script to build the models and calculate model statistics. For each sex/phenotype combination, this script will spin off a background job that calls `pheno_heritability_est.R`. 
 
