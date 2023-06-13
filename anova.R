@@ -58,18 +58,17 @@ for (i in 1:length(outcome_vars)){
 
 # For each covariate (pred_terms)/column in results.p
 # Rank p-values from smallest (most significant) to largest (least significant) 
-### need to keep original ranks and order by original rank 
 # Assign rank value 1-15
 # Calculate adjusted p-value: original p-value * (17/rank)
 
 for (i in 1:length(pred_terms)){
-  # determine ranks 
+  # determine ranks (keep originals so you can reorder by them)
   pdf <- data.frame(og.rank = seq(1,nrow(results.p)), pval = results.p[,i])
-  pdf <- pdf[order(pdf$pval),]
+  pdf <- pdf[order(pdf$pval),] # rank by significance 
   pdf$rank <- seq(1, nrow(pdf))
   
   # calculate adjusted p-value 
-  pdf$adjpval <- pdf$pval*(15/pdf$rank) 
+  pdf$adjpval <- pdf$pval*(nrow(results.p)/pdf$rank) 
   
   # return to original order 
   pdf <- pdf[order(pdf$og.rank),]
