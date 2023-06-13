@@ -21,7 +21,8 @@ results.F <- data.frame(matrix(nrow = length(outcome_vars), ncol = length(pred_t
 colnames(results.F) <- pred_terms
 results.p <- results.F
 
-h2 <- vector(length = length(outcome_vars))
+h2 <- data.frame(phenotype = outcome_vars, 
+                 heritability = vector(length = length(outcome_vars)))
 
 for (i in 1:length(outcome_vars)){
   pheno.name <- outcome_vars[i]
@@ -58,7 +59,7 @@ for (i in 1:length(outcome_vars)){
       formula0 <- formula1 
       mod0 <- relmatLmer(formula0, data = na.omit(moddata), relmat = list(Access_ID = K))
     } else { # this is the last term, so calculate heritability from the full model 
-      h2[i] <- VarProp(mod1)$prop[1]
+      h2$heritability[i] <- VarProp(mod1)$prop[1]
     }
     
   }
