@@ -6,6 +6,7 @@ source("utils.R")
 dat <- read.csv("derived_data/transformed_data_All-G3package.csv")
 K <- as.matrix(read.table("derived_data/relatedness_matrix_MaleFemale_PilotThesis.txt", 
                           sep=" ", check.names = FALSE))
+K <- K*2
 
 pred_terms <- c('Study', 'Litter_Size', 'I(Litter_Size^2)', 'Sex', 'Diet', 'Sex:Diet')
 pred_vars <- c('Study', 'Litter_Size', 'Sex', 'Diet') 
@@ -19,6 +20,8 @@ results.F <- data.frame(matrix(nrow = length(outcome_vars), ncol = length(pred_t
                       row.names = outcome_vars)
 colnames(results.F) <- pred_terms
 results.p <- results.F
+
+h2 <- vector(length = length(outcome_vars))
 
 for (i in 1:length(outcome_vars)){
   pheno.name <- outcome_vars[i]
@@ -42,15 +45,22 @@ for (i in 1:length(outcome_vars)){
     results.p[i,j] <- kr$test$p.value[1]
     
     # Create dataset and small model for next comparison 
-    if((!is.na(pred_terms[j+1])) & (pred_terms[j+1]!='I(Litter_Size^2)') & (pred_terms[j+1]!='Sex:Diet')){
+    # Don't need to add data if this is last term or next term is Litter.Size^2, Sex:Diet
+    if ((!is.na(pred_terms[j+1])) & (pred_terms[j+1]!='I(Litter_Size^2)') & (pred_terms[j+1]!='Sex:Diet')){
       k <- k+1
       moddata <- cbind(moddata, dat[,pred_vars[k]]) # add next col
       colnames(moddata)[k+3] <- pred_vars[k]
     }
-    # current large model becomes small model for the next comparison (using new dataset
-    # with NAs omitted for next variable as well)
-    formula0 <- formula1 
-    mod0 <- relmatLmer(formula0, data = na.omit(moddata), relmat = list(Access_ID = K))
+    
+    # if there are terms left to add, current large model becomes small model for 
+    # the next comparison (using new dataset with NAs omitted for next variable as well)
+    if (!is.na(pred_terms[j+1])){
+      formula0 <- formula1 
+      mod0 <- relmatLmer(formula0, data = na.omit(moddata), relmat = list(Access_ID = K))
+    } else { # this is the last term, so calculate heritability from the full model 
+      h2[i] <- VarProp(mod1)$prop[1]
+    }
+    
   }
 }
 
@@ -80,6 +90,7 @@ for (i in 1:length(pred_terms)){
 #--------------------------------Save results----------------------------------#
 ensure_directory("results")
 write.csv(results.p, file = "results/anova-results.csv")
+write.csv(h2, file = 'results/anova-h2-estimates.csv')
 
 
 
