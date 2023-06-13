@@ -49,6 +49,14 @@ Three pedigrees and three relatedness matrices (male, female and combined) will 
 Analysis
 --------
 
+Run the following script to perform factor analysis on transformed phenotypes: 
+
+```
+Rscript factor_analysis.R
+```
+
+This script will perform factor analysis on the transformed dataset with missing values imputed, save the factor loadings to the `results` folder, and calculate factor phenotypes for each factor (the sum of the phenotypic values multiplied by their corresponding factor loadings). The transformed data files in the `derived_data` directory will be updated with these factor phenotypes, and downstream analyses will be performed on these factor phenotypes as well as the original phenotypes. 
+
 Run the following Rscript to perform covariate analysis:
 
 ```

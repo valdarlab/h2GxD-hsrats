@@ -12,7 +12,8 @@ pred_vars <- c('Study', 'Litter_Size', 'Sex', 'Diet')
 outcome_vars <- c("HarvWeight", "RetroFat_norm", "EpiFat_norm", "OmentalFat_norm",
                   "Total_AUC", "FastGluc", "FastIns", "ClosedJunc", "OpenJunc",
                   "REST_EPISODE_COUNT_5", "MOVEMENT_EPISODE_COUNT_5",
-                  "VERTICAL_EPISODE_COUNT_5", "SWIM", "CLIMB", "FLOAT")
+                  "VERTICAL_EPISODE_COUNT_5", "SWIM", "CLIMB", "FLOAT", "Factor1", 
+                  "Factor2", "Factor3", "Factor4")
 
 results.F <- data.frame(matrix(nrow = length(outcome_vars), ncol = length(pred_terms)), 
                       row.names = outcome_vars)
