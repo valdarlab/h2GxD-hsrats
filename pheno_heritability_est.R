@@ -17,7 +17,7 @@ pheno <- cmdline.option("pheno")
 data <- read.csv(datapath)
 data$cohort_f <- factor(data$Cohort)
 
-G <- as.matrix(read.table(matpath, sep=" ", check.names = FALSE))*2
+G <- as.matrix(read.table(matpath, sep=" ", check.names = FALSE)) 
 
 num_chains  <- cmdline.integer("num_chains", default=3)
 num_samples <- cmdline.integer("num_samples", default=100000)

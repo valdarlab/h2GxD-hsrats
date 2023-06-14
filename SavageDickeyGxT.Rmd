@@ -13,7 +13,6 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
-#setwd("/Users/ellenrisemberg/Documents/ValdarFerris/HS_geneXdiet")
 ```
 
 # Introduction to Bayes Factors

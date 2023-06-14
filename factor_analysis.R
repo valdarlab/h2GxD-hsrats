@@ -2,9 +2,7 @@
 library(tidyverse)
 library(missMDA)
 library(factoextra)
-
-### DELETE THIS 
-setwd('/Users/ellenrisemberg/Documents/ValdarFerris/GxD0531')
+source("utils.R")
 
 #---------------------------------Load Data------------------------------------#
 dat <- read.csv('derived_data/transformed_data_All-G3package.csv')
@@ -23,6 +21,8 @@ comp_data <- imputePCA(fadat, method = "regularized", ncp = ncp$ncp, scale = TRU
 # run iterative PCA on imputed dataset - determine number of factors to use in FA 
 ipca <- prcomp(comp_data$completeObs, scale = TRUE)
 #print(fviz_eig(ipca)) # print scree plot 
+ensure_directory('results')
+ensure_directory('results/plots')
 ggsave(fviz_eig(ipca), filename = 'results/plots/scree-plot.pdf')
 
 #-------------------------------Factor Analysis--------------------------------#

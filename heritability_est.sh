@@ -21,7 +21,8 @@ phenotypes=("HarvWeight" "RetroFat_norm" "EpiFat_norm" \
 	"OmentalFat_norm" "Total_AUC" "FastGluc" "FastIns" \
 	"REST_EPISODE_COUNT_5" "MOVEMENT_EPISODE_COUNT_5" \
 	"VERTICAL_EPISODE_COUNT_5" "FLOAT" "SWIM" "CLIMB" \
-	"OpenJunc", "ClosedJunc")
+	"OpenJunc", "ClosedJunc" "Factor1" "Factor2" "Factor3" \
+	"Factor4")
 
 sexes=("Male" "Female") 
 

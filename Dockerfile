@@ -1,19 +1,22 @@
-FROM rocker/verse:4.1.3
+FROM rocker/verse:4.2.1
 
-# Install R packages (from MRAN snapshot on 04-01-2022)
-RUN R -e "install.packages('tidyverse', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('lme4qtl', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('pbkrtest', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('coda', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('pheatmap', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('regress', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('MASS', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('Matrix', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('logspline', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('AGHmatrix', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('QTLRel', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('missMDA', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
-RUN R -e "install.packages('factoextra', repos = 'https://mran.microsoft.com/snapshot/2022-04-01')"
+# Install R packages 
+RUN R -e "install.packages('devtools')"
+RUN R -e "require(devtools)"
+RUN R -e "devtools::install_github('variani/lme4qtl')"
+
+RUN R -e "install.packages('tidyverse')"
+RUN R -e "install.packages('QTLRel')"
+RUN R -e "install.packages('missMDA')"
+RUN R -e "install.packages('factoextra')"
+RUN R -e "install.packages('pbkrtest')"
+RUN R -e "install.packages('coda')"
+RUN R -e "install.packages('MASS')"
+RUN R -e "install.packages('Matrix')"
+RUN R -e "install.packages('regress')"
+RUN R -e "install.packages('logspline')"
+RUN R -e "install.packages('knitr')"
+
 
 # install LaTeX packages
 RUN tlmgr update --self --all
