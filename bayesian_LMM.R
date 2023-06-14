@@ -196,9 +196,13 @@ MCMC_heritability_mixed_genetic_and_non_genetic<-function(fixed_form,random_form
     full_form<-as.formula(paste(paste(c(as.character(fixed_form)[2],as.character(fixed_form[1]),as.character(fixed_form)[3]),collapse=""),"+",as.character(random_form)[2],"+",as.character(genetic_form)[2],collapse=""))
     missing_vals<-lm(full_form,data=dat)$na.action
 
-    fit_lm1<-lm(form1,data=dat[-missing_vals,])
-    fit_lm2<-lm(form2,data=dat[-missing_vals,])
-    fit_lm3<-lm(form3,data=dat[-missing_vals,])
+    if(!is.null(missing_vals)){
+      dat <- dat[-missing_vals,]
+    }
+    
+    fit_lm1<-lm(form1,data=dat)
+    fit_lm2<-lm(form2,data=dat)
+    fit_lm3<-lm(form3,data=dat)
 
     y<-as.vector(model.response(model.frame(fit_lm1)))
     scl_fctr<-1/sd(y)
