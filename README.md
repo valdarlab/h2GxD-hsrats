@@ -8,7 +8,7 @@ Sex and genetic specific effects on behavioral, but not metabolic, responses to 
 Environment prep
 ----------------
 
-This project uses a Docker container to produce an environment similar to that used in the original analysis (e.g. R v4.1.3 and R package versions available on April 1, 2022). In order to run this container you will need [Docker](https://docs.docker.com/get-docker/) installed. 
+This project uses a Docker container to produce an environment similar to that used in the original analysis (e.g. R v4.2.1 and associated R package versions). In order to run this container you will need [Docker](https://docs.docker.com/get-docker/) installed. 
 
 Build the docker container:
 

@@ -4,8 +4,6 @@ FROM rocker/verse:4.2.1
 RUN R -e "install.packages('devtools')"
 RUN R -e "require(devtools)"
 RUN R -e "devtools::install_github('variani/lme4qtl')"
-
-RUN R -e "install.packages('tidyverse')"
 RUN R -e "install.packages('QTLRel')"
 RUN R -e "install.packages('missMDA')"
 RUN R -e "install.packages('factoextra')"
