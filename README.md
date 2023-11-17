@@ -65,11 +65,10 @@ Run the following Rscript to perform covariate analysis:
 Rscript anova.R
 ```
 
--------
 This script performs two primary analysis:
-1. Sex-stratified analysis asks whether there is a significant effect of diet, stratified by sex (**RESULTS FILENAME**) 
-2. Covariate analysis. Results of this analysis will be saved in the `results` directory. This includes p-values for the significance of each term in predicting each phenotype, as well as heritability estimates for each phenotype, calculated via ICC. 
----------
+1. Sex-stratified analysis, which asks whether there is a significant sex-specific diet effect on each phenotype (results in `results/diet-effects.csv`) 
+2. Combined analysis which asks whether there is an effect of several covariates (e.g. cohort, sex, sex:diet) which are described in the manuscript. P-values for the significance of each term in predicting each phenotype are in `results/covariate-analysis.csv`
+
 
 Run the following bash script to build the models and calculate model statistics. For each sex/phenotype combination, this script will spin off a background job that calls `pheno_heritability_est.R`. 
 
