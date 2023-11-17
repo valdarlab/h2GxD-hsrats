@@ -27,6 +27,7 @@ ggsave(fviz_eig(ipca), filename = 'results/plots/scree-plot.pdf')
 
 #-------------------------------Factor Analysis--------------------------------#
 fares <- factanal(x = comp_data$completeObs, factors = 4, rotation = "varimax")
+print(fares)
 write.csv(fares$loadings, file = 'results/factor-loadings.csv')
 
 #------------------------------Factor Phenotypes-------------------------------# 

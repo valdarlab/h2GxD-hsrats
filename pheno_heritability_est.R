@@ -27,7 +27,7 @@ thin        <- cmdline.integer("thin", default=10)
 
 #----------------------------------Analysis------------------------------------#
 ensure_directory("derived_data/posterior_samples")
-outpath = paste("derived_data/posterior_samples/MCMC_", pheno, "_", sex, sep="")
+outpath = paste("derived_data/posterior_samples/MCMC_", sex, "_", pheno, sep="")
 
 fixed_form <- as.formula(ifelse(sex == "Male", paste(pheno, "~ Litter_Size + Study + z"), 
                                 paste(pheno, "~ Litter_Size + z")))

@@ -166,10 +166,41 @@ plot(lsp.prior, lty=3, xlim=0:1, main="Heritability prior", xlab="heritability",
 ### All posteriors
 
 The following plots show, for each phenotype/sex combination, the prior (dashed line) and posterior (full line) of ordinary heritability (G) or GxT heritability. In the title of each plot is the BF, the ratio between the dashed and full line at 0. As mentioned above, the larger the BF is above 1, the more evidence there is *against* that type of heritability being zero; BF values below 1 indicate the evidence in favor of zero heritability. 
+
 ```{r cache=TRUE, echo=FALSE}
 # Convert posterior samples to logspline densities
-mcmc.files <- list.files("derived_data/posterior_samples/", full.names = TRUE)
-phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
+#mcmc.files <- list.files("derived_data/posterior_samples", full.names = TRUE)
+#phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
+
+# Use specific order of phenotypes for posterior plots
+phenos <- c("Male_HarvWeight", "Female_HarvWeight", 
+            "Male_RetroFat_norm", "Female_RetroFat_norm",
+            "Male_EpiFat_norm", "Female_EpiFat_norm", 
+            "Male_OmentalFat_norm", "Female_OmentalFat_norm",
+            "Male_Total_AUC", "Female_Total_AUC", 
+            "Male_FastGluc", "Female_FastGluc",
+            "Male_FastIns", "Female_FastIns",
+            "Male_Factor1", "Female_Factor1", 
+            "Male_ClosedJunc", "Female_ClosedJunc",
+            "Male_OpenJunc", "Female_OpenJunc", 
+            "Male_Factor3", "Female_Factor3",
+            "Male_SWIM", "Female_SWIM", 
+            "Male_CLIMB", "Female_CLIMB", 
+            "Male_FLOAT", "Female_FLOAT", 
+            "Male_Factor4", "Female_Factor4",
+            "Male_REST_EPISODE_COUNT_5", "Female_REST_EPISODE_COUNT_5", 
+            "Male_MOVEMENT_EPISODE_COUNT_5", "Female_MOVEMENT_EPISODE_COUNT_5", 
+            "Male_VERTICAL_EPISODE_COUNT_5", "Female_VERTICAL_EPISODE_COUNT_5", 
+            "Male_Factor2", "Female_Factor2")
+
+mcmc.files <- paste0("derived_data/posterior_samples/MCMC_", phenos)
+
+h2res <- data.frame(phenotype = phenos, 
+                    gh2_med = rep(NA, length(phenos)),
+                    gh2_sd = rep(NA, length(phenos)),
+                    gxdh2_med = rep(NA, length(phenos)),
+                    gxdh2_sd = rep(NA, length(phenos)))
+
 ensure_directory("results/posterior_densities")
 lsp.files <- file.path("results/posterior_densities", paste0(phenos, "_lsp.RDS"))
 
@@ -180,12 +211,18 @@ for (i in 1:length(phenos)){
   cat("Logsplining ", phenos[i], "\n")
   post.samples <- load.to.object(mcmc.files[i])
   h2 <- calc.h2(post.samples, burnin=1000, thin=10)
+  
+  # save median/sd of overall and GxT heritability estimates 
+  h2res[i,c(2:5)] <- c(median(h2$g), sd(h2$g), median(h2$gxt), sd(h2$gxt))
+  
   lsp.list <- list()
   for (var in names(h2)){
     lsp.list[[var]]$lsp <- logspline(h2[[var]], lbound=0, ubound=1)
   }
   saveRDS(lsp.list, file=lsp.files[i])
 }
+
+write.csv(h2res, file = "results/posterior-h2-stats.csv")
 ```
 
 
@@ -216,6 +253,26 @@ for (i in 1:length(phenos)){
 ## Tables of Bayes factors
 
 The table below also gives the logBF, which is the logarithm to the base 10 of the BF. In this case, logBF=0 is no evidence, logBF>0 is positive evidence, logBF>0 is evidence against.
+
+Re-order phenotypes for tables: 
+
+```{r echo=FALSE, cache=TRUE}
+phenos <- c("Male_HarvWeight", "Male_RetroFat_norm", "Male_EpiFat_norm",
+            "Male_OmentalFat_norm", "Male_Total_AUC", "Male_FastGluc", "Male_FastIns",
+            "Male_Factor1", "Male_ClosedJunc", "Male_OpenJunc", "Male_Factor3", 
+            "Male_SWIM", "Male_CLIMB", "Male_FLOAT", "Male_Factor4", 
+            "Male_REST_EPISODE_COUNT_5", "Male_MOVEMENT_EPISODE_COUNT_5", 
+            "Male_VERTICAL_EPISODE_COUNT_5", "Male_Factor2", 
+            "Female_HarvWeight", "Female_RetroFat_norm", "Female_EpiFat_norm", 
+            "Female_OmentalFat_norm", "Female_Total_AUC", "Female_FastGluc", "Female_FastIns",
+            "Female_Factor1", "Female_ClosedJunc", "Female_OpenJunc", "Female_Factor3",
+            "Female_SWIM", "Female_CLIMB", "Female_FLOAT", "Female_Factor4",
+            "Female_REST_EPISODE_COUNT_5", "Female_MOVEMENT_EPISODE_COUNT_5", 
+            "Female_VERTICAL_EPISODE_COUNT_5", "Female_Factor2")
+
+results$phenotype <- factor(results$phenotype, levels = phenos)
+results <- results[order(results$phenotype),]
+```
 
 ### Bayes factors for ordinary heritability (G)
 ```{r echo=FALSE, cache=TRUE}

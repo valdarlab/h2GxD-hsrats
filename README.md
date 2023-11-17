@@ -30,13 +30,15 @@ cd home/rstudio/work
 
 Data prep
 ---------
-Run the following R script to transform and clean up the raw data located in the `source_data` directory: 
+Run the following R script to summarize and transform/clean up the raw data located in the `source_data` directory: 
 
 ```
 Rscript data_transformations.R
 ```
 
-The following files (one for each sex, and one combined) will be produced in the `derived_data` directory: `transformed_data_female-G3package.csv`, `transformed_data_male-G3package.csv`, and `transformed_data_all-G3package.csv`. 
+This script will calculate descriptive statistics )mean and standard deviation) for raw phenotypes and save them in `results/phenotype_summary.csv`.
+
+This script will also transform the raw data as specified in `source_data/phenotype_transformations.csv`. The following files (one for each sex, and one combined) will be produced in the `derived_data` directory: `transformed_data_female-G3package.csv`, `transformed_data_male-G3package.csv`, and `transformed_data_all-G3package.csv`. 
 
 Run the following Rscript to create additive relationship matrices:
 
@@ -63,7 +65,11 @@ Run the following Rscript to perform covariate analysis:
 Rscript anova.R
 ```
 
-Results of ANOVA analyses will be saved in the `results` directory. This includes p-values for the significance of each term in predicting each phenotype, as well as heritability estimates for each phenotype. 
+-------
+This script performs two primary analysis:
+1. Sex-stratified analysis asks whether there is a significant effect of diet, stratified by sex (**RESULTS FILENAME**) 
+2. Covariate analysis. Results of this analysis will be saved in the `results` directory. This includes p-values for the significance of each term in predicting each phenotype, as well as heritability estimates for each phenotype, calculated via ICC. 
+---------
 
 Run the following bash script to build the models and calculate model statistics. For each sex/phenotype combination, this script will spin off a background job that calls `pheno_heritability_est.R`. 
 
@@ -77,7 +83,7 @@ The default behavior is to create background jobs using standard bash commands. 
 bash heritability_est.sh -m slurm 
 ```
 
-The time limit for slurm jobs is specified at 3 days. The longest running phenotype on UNC's research computing cluster was 48 hours. 
+The time limit for slurm jobs is specified at 3 days. The longest running phenotype on UNC's high-performance computing cluster was 48 hours. 
 
 In either case, a `logs` directory will be created where stdout from each job will print to its own `.log` file. You can track the progress of the program for each phenotype here. 
 
