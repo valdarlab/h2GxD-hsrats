@@ -46,56 +46,83 @@ with evidence for zero (ie, against G or GxT) being the corresponding reciprocal
 
 ```{r, echo=FALSE}
 library(logspline)
-source("sample_from_approx_prior.R") # Andrew's prior sampler code
+library(coda)
 source("utils.R")
 
-ifow <- function(test, yes, no){
-  if(test){return(yes)} 
-  no
-}
 
-load.to.object <- function(fname){
-  eh <- new.env()
-  load(fname, envir=eh)
-  x <- get(ls(eh)[1], envir=eh)
-}
-
-calc.h2 <- function(x, burnin=1000, thin=1){
+load.posterior.varsamples <- function(file, burnin=1000, thin=1){
+  x <- load.to.object(file)
   nall <- dim(x$alpha)[3] # get number of timesteps
   s <- seq(from=burnin+1, to=nall, by=thin)
   # y ~ litter.size + study  + z       + (1|cohort)                + (1|kinship)            + (z|kinship)
   #     alpha1        alpha2   alpha3    u ~ N(, sigma_sq_lambda)    N(, sigma_sq_beta[1])    N(, sigma_sq_beta[2])
-  noise <- c(x$sigma_sq[,s])
-  g <- c(x$sigma_sq_beta[1,,s])
-  gxt <- c(x$sigma_sq_beta[2,,s])
-  cohort <- c(x$sigma_sq_lambda[,s])
-  total <- noise + g + gxt + cohort
-  data.frame(noise=noise/total, g=g/total, gxt=gxt/total, cohort=cohort/total)
+  data.frame(
+    g      = c(x$sigma_sq_beta[1,,s]),
+    gxt    = c(x$sigma_sq_beta[2,,s]),
+    cohort = c(x$sigma_sq_lambda[,s]),
+    noise  = c(x$sigma_sq[,s]))
 }
 
-plot.post <- function(post, prior.lsp, main="", ylim=NULL, digits=3){
+calc.h2 <- function(mc, type=NULL){  # mc = data.frame of mcmc variance samples: g, gxt, cohort, noise
+  if (4!=ncol(mc)){
+    stop("Bad input format\n")
+  }
+  if (is.null(type)){
+    stop("Specify type")
+  }
+  if ("gcor"==type){
+    x <- (mc$g - mc$gxt) / (mc$g + mc$gxt)
+    attr(x, "range") <- c(-1,1)
+    return (x)
+  }
+  total <- mc$g + mc$gxt + mc$cohort + mc$noise
+  x <- switch(type,
+              g      = mc$g/total,
+              gxt    = mc$gxt/total,
+              cohort = mc$cohort/total,
+              noise  = mc$noise/total,
+              allg   = (mc$g + mc$gxt) / total,
+              gcoh   = (mc$g + mc$cohort) / total) 
+  attr(x, "range") <- c(0,1)
+  if (is.null(x)){ stop("Unknown type:", type) }
+  x
+}
+
+get.funct.range <- function(type){
+  if (type %in% c("g", "gxt", "cohort", "noise", "allg")){
+    return (c(0,1))
+  }
+  if ("gcor"==type){
+    return (c(-1,1))
+  }
+  stop("Unknown type:", type)
+}
+
+plot.post <- function(d, prior.lsp, main="", xlim=c(0,1), ylim=NULL, digits=3,
+                      xlab="intraclass correlation coefficient (heritability)"){
   n <- 100
-  xx <- (0:(n-1))/(n-1)
-  yy <- dlogspline(xx, lsp.prior)
-  d <- list(
-    g = list(post = post$g,  col = "blue", string="G"),
-    gxt = list(post = post$gxt,  col = "red", string="GxT"),
-    cohort = list(post = post$cohort,  col = "orange", string="cohort"),
-    noise = list(post = post$noise,  col = "gray", string="noise")
-  )
+  xx <- (0:(n-1))/(n-1)*diff(xlim) + xlim[1]
+  yy <- dlogspline(xx, prior.lsp)
   for (vc in names(d)){
     yy <- c(yy, dlogspline(xx, d[[vc]]$post$lsp))
-    if (!is.null(d[[vc]]$post$bf)){
-      d[[vc]]$string <- paste0(d[[vc]]$string, "  (BF=", round(d[[vc]]$post$bf, digits=digits), ")")
+    bf <- d[[vc]]$post$bf
+    if (!is.null(bf)){
+      if (1==length(bf)){
+        d[[vc]]$string <- paste0(d[[vc]]$string, "  (BF=", round(bf, digits=digits), ")")
+      } else if (2==length(bf)){
+        d[[vc]]$string <- paste0(d[[vc]]$string, 
+                                 "\nBF.0=", round(bf[1], digits=digits), 
+                                 "\nBF.1=", round(bf[2], digits=digits))
+      }
     }
   }
   if (is.null(ylim)){
     ylim <- c(0, max(yy))
   }
-  plot(lsp.prior, xlim=0:1, ylim=ylim, lty=2, las=1, 
-       xlab="intraclass correlation coefficient (heritability)", ylab="posterior density", main=main)
+  plot(prior.lsp, xlim=xlim, ylim=ylim, lty=2, las=1, 
+       xlab=xlab, ylab="posterior density", main=main)
   for (vc in names(d)){
-    plot(d[[vc]]$post$lsp, lty=1, add=TRUE, col=d[[vc]]$col)
+    plot(d[[vc]]$post$lsp, xlim=xlim, lty=1, add=TRUE, col=d[[vc]]$col)
   }
   legend("topright", bty="n",
           legend=c("prior", sapply(d, function(x){x$string})),
@@ -104,28 +131,149 @@ plot.post <- function(post, prior.lsp, main="", ylim=NULL, digits=3){
           )
 }
 
-calc.BF <- function(prior, post, xvalue=0, plotit=TRUE, pheno.string="phenotype", 
-                    param.string="", ylim=NULL, digits=3){
-  # calculate logspline approximations
-  lsp.prior <- prior #ifow(inherits(prior, "logspline"), prior, logspline(prior, lbound=0, ubound=1))
-  lsp.post <- post #ifow(inherits(post, "logspline"), post, logspline(post, lbound=0, ubound=1))
+plot.logBFs <- function(res, ...){
+  oldpar <- par()
+  par(mar=c(5, 20, 5, 2))
+  plot(res$logBF, nrow(res):1, axes=FALSE, ylab="", type="o", pch=c(1,1,19,19), ...)
+  axis(2, at=nrow(res):1, labels=res$phenotype, las=1)
+  abline(v=c(-1,0,1), lty=2, col=c("gray", "black", "gray"))
+  axis(1)
+  axis(3)
+}
+
+plot.logBFs.paired <- function(phenos, y1, y2, col=c("red", "blue"), xlab="logBF against zero", ...){
+  oldpar <- par()
+  par(mar=c(5, 20, 5, 2))
+  n <- length(phenos)
+  plot(y1, n:1, axes=FALSE, xlim=range(c(y1,y2)), ylab="", type="o", pch=1, col=col[1], xlab=xlab, ...)
+  points(y2, n:1, ylab="", type="o", pch=1, col=col[2])
+  axis(2, at=n:1, labels=phenos, las=1)
+  abline(v=c(-1,0,1), lty=2, col=c("gray", "black", "gray"))
+  axis(1)
+  axis(3)
+  box()
+  par(oldpar)
+}
+
+
+plot.logBFs.paired.multi <- function(phenos, data,
+                                col=c("red", "blue"),
+                                xlim=NULL,
+                                gap=0.1, # gap between plots; assumes each plot is 1 unit wide
+                                ...){
+  # expects dat=list(name=, mat=, xlim=)
+  oldpar <- par()
+  par(mar=c(5, 20, 5, 2))
+  n <- length(phenos)
+  K <- length(data)
+  xstart <- (1:K - 1)*(1+gap)
+  xend   <- xstart + 1
+  plot(c(xstart[1], xend[K]), c(1,n), xlim=c(0,xend[K]), axes=FALSE, type="n", xlab="", ylab="")
+  for (k in 1:K){
+    dat <- data[[k]]
+    mtext(dat$name, side=3, at=xstart[k]+0.5, line=2, font=2)
+    mtext(dat$xlab, side=1, at=xstart[k]+0.5, line=2, font=1)
+    segments(x0=rep(xstart[k], n), y0=1:n, x1=rep(xend[k], n), y1=1:n, col="gray90")
+    d.range <- range(dat$mat)
+    if (!is.null(xlim)){
+      d.range <- xlim
+    }
+    if (!is.null(dat$xlim)){
+      d.range <- dat$xlim
+    }
+    d2x <- function(d){ (d - d.range[1]) / diff(d.range) + xstart[k] }
+    abline(v=d2x(c(-1,0,1)), lty=2, col=c("gray", "black", "gray"))
+    x.mat <- d2x(dat$mat) 
+    for (j in 1:ncol(x.mat)){
+      points(x.mat[,j], n:1, type="o", pch=1, col=col[j])
+    }
+    d.ticks <- pretty(d.range)
+    d.ticks <- d.ticks[d.ticks >= d.range[1] & d.ticks <= d.range[2]]
+    axis(1, at=d2x(d.ticks), labels=d.ticks, las=1)
+    axis(3, at=d2x(d.ticks), labels=d.ticks, las=1)
+  }
+  axis(2, at=n:1, labels=phenos, las=1)
+  par(oldpar)
+}
+
+
+plot.ci.multi <- function(phenos,
+                          data,
+                          col=c("red", "blue"),
+                          xlim=NULL,
+                          gap=0.1, # gap between plots; assumes each plot is 1 unit wide
+                          vgap=0.1,
+                          ...){
+  # expects dat=list(name=, mat=, xlim=)
+  oldpar <- par()
+  par(mar=c(5, 20, 5, 2))
+  n <- length(phenos)
+  K <- length(data)
+  xstart <- (1:K - 1)*(1+gap)
+  xend   <- xstart + 1
+  plot(c(xstart[1], xend[K]), c(1,n), xlim=c(0,xend[K]), axes=FALSE, type="n", xlab="", ylab="")
+  for (k in 1:K){
+    dat <- data[[k]]
+    mtext(dat$name, side=3, at=xstart[k]+0.5, line=2, font=2)
+    mtext(dat$xlab, side=1, at=xstart[k]+0.5, line=2, font=1)
+    segments(x0=rep(xstart[k], n), y0=1:n, x1=rep(xend[k], n), y1=1:n, col="gray90")
+    d.range <- range(dat$mat)
+    if (!is.null(xlim)){
+      d.range <- xlim
+    }
+    if (!is.null(dat$xlim)){
+      d.range <- dat$xlim
+    }
+    d2x <- function(d){ (d - d.range[1]) / diff(d.range) + xstart[k] }
+    if (!is.null(dat$dashed)){
+      abline(v=d2x(dat$dashed), lty=2, col=c("gray"))
+    }
+    if (!is.null(dat$full)){
+      abline(v=d2x(dat$full), col="black")
+    }
+    x.mat <- d2x(dat$mat)
+    y.offset <- scale(1:dim(dat$mat)[3])*vgap
+    for (j in 1:dim(dat$mat)[3]){
+      y <- n:1 + y.offset[j]
+      ci95 <- x.mat[, 5:6 ,j]
+      segments(x0=ci95[, 1], x1=ci95[, 2], y0=y, y1=y, lwd=1, col=col[j])
+      ci50 <- x.mat[, 3:4, j]
+      segments(x0=ci50[, 1], x1=ci50[, 2], y0=y, y1=y, lwd=3, col=col[j])
+      points(x.mat[,1,j], y, type="p", pch="|", col=col[j])
+      points(x.mat[,2,j], y, type="p", pch="|", col="white")
+    }
+    d.ticks <- pretty(d.range)
+    d.ticks <- d.ticks[d.ticks >= d.range[1] & d.ticks <= d.range[2]]
+    axis(1, at=d2x(d.ticks), labels=d.ticks, las=1)
+    axis(3, at=d2x(d.ticks), labels=d.ticks, las=1)
+  }
+  axis(2, at=n:1, labels=phenos, las=1)
+  par(oldpar)
+}
+
+
+
+
+calc.BF <- function(prior.lsp, post.lsp, xvalue=0, plotit=TRUE,
+                    pheno.string="phenotype", 
+                    param.string="", ylim=NULL, xlim=0:1, digits=3){
   # estimate density at x
-  prior.at.x <- dlogspline(xvalue, lsp.prior)
-  post.at.x <- dlogspline(xvalue, lsp.post)
+  prior.at.x <- dlogspline(xvalue, prior.lsp)
+  post.at.x  <- dlogspline(xvalue, post.lsp)
   # calc Bayes factor
   BF <- prior.at.x / post.at.x
   # plotting
   if (plotit){
     n <- 100
-    xx <- (0:(n-1))/(n-1)
-    yy.prior <- dlogspline(xx, lsp.prior)
-    yy.post <- dlogspline(xx, lsp.post)
+    xx <- (0:(n-1))/(n-1) * diff(xlim) - xlim[1]
+    yy.prior <- dlogspline(xx, prior.lsp)
+    yy.post  <- dlogspline(xx, post.lsp)
     if (is.null(ylim)){
       ylim <- c(0, max(c(yy.prior, yy.post)))
     }
-    plot(lsp.post, xlim=0:1, ylim=ylim, lty=1, las=1, xlab=param.string, ylab="density",
+    plot(post.lsp, xlim=xlim, ylim=ylim, lty=1, las=1, xlab=param.string, ylab="density",
         main=paste0(pheno.string, "\nBF for ", param.string, " is ", round(BF, digits=digits)))
-    plot(lsp.prior, lty=2, xlim=0:1, add=TRUE)
+    plot(prior.lsp, xlim=xlim, lty=2, add=TRUE)
   }
   data.frame(
     phenotype=pheno.string, 
@@ -152,102 +300,34 @@ The implicit prior on either of these fractions looks like the density below.
 
 ```{r cache=TRUE, echo=FALSE}
 # get samples from the prior
-prior <- c(sample_from_approx_prior(maxVal=1e5, nBins=1e6, sh=-1, rt=0, numVar=3)) # 4 million samples
+# prior <- c(sample_from_approx_prior(maxVal=1e5, nBins=1e6, sh=-1, rt=0, numVar=3)) # 4 million samples
 # saveRDS(prior, file="priorsamples.RDS")
-# prior <- readRDS("priorsamples.RDS")
-lsp.prior <- logspline(prior[1:1e6], lbound=0, ubound=1)
-saveRDS(lsp.prior, file="derived_data/priorlsp.RDS")
-#lsp.prior <- readRDS("derived_data/priorlsp.RDS")
-plot(lsp.prior, lty=3, xlim=0:1, main="Heritability prior", xlab="heritability", ylab="density", las=1)
-```
+varsamples <- readRDS("derived_data/prior_variance_samples.RDS")
+varsamples <- as.data.frame(varsamples)
+colnames(varsamples) <- c("g", "gxt", "cohort", "noise")
 
-## Results
+# make prior densities
+prior <- list()
+# g and gxt priors
+x <- calc.h2(varsamples, type="g")
+rng <- attr(x, "range")
+prior$g      <- list(lsp=logspline(x[1:1e6], lbound=rng[1], ubound=rng[2]), range=rng)
+prior$gxt    <- prior$g
+prior$cohort <- prior$g
+plot(prior$g$lsp, lty=3, xlim=rng, main="Single component heritability prior", xlab="heritability", ylab="density", las=1)
 
-### All posteriors
+# allg prior, ie, g + gxt (sum of two h2 terms)
+x <- calc.h2(varsamples, type="allg")
+rng <- attr(x, "range")
+prior$allg <- list(lsp=logspline(x[1:1e5], lbound=rng[1], ubound=rng[2]), range=rng)
+plot(prior$allg$lsp, lty=3, xlim=rng, main="G + GxT combined heritability prior", xlab="combined heritability", ylab="density", las=1)
+# gcor, ie, genetic correlation between hfd vs non-hfd individuals
+x <- calc.h2(varsamples, type="gcor")
+rng <- attr(x, "range")
+prior$gcor$lsp <- logspline(x[1:1e5], lbound=rng[1], ubound=rng[2])
+plot(prior$gcor$lsp, lty=3, xlim=rng, main="Genetic correlation", xlab="heritability", ylab="density", las=1)
 
-The following plots show, for each phenotype/sex combination, the prior (dashed line) and posterior (full line) of ordinary heritability (G) or GxT heritability. In the title of each plot is the BF, the ratio between the dashed and full line at 0. As mentioned above, the larger the BF is above 1, the more evidence there is *against* that type of heritability being zero; BF values below 1 indicate the evidence in favor of zero heritability. 
-
-```{r cache=TRUE, echo=FALSE}
-# Convert posterior samples to logspline densities
-#mcmc.files <- list.files("derived_data/posterior_samples", full.names = TRUE)
-#phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
-
-# Use specific order of phenotypes for posterior plots
-phenos <- c("Male_HarvWeight", "Female_HarvWeight", 
-            "Male_RetroFat_norm", "Female_RetroFat_norm",
-            "Male_EpiFat_norm", "Female_EpiFat_norm", 
-            "Male_OmentalFat_norm", "Female_OmentalFat_norm",
-            "Male_Total_AUC", "Female_Total_AUC", 
-            "Male_FastGluc", "Female_FastGluc",
-            "Male_FastIns", "Female_FastIns",
-            "Male_Factor1", "Female_Factor1", 
-            "Male_ClosedJunc", "Female_ClosedJunc",
-            "Male_OpenJunc", "Female_OpenJunc", 
-            "Male_Factor3", "Female_Factor3",
-            "Male_SWIM", "Female_SWIM", 
-            "Male_CLIMB", "Female_CLIMB", 
-            "Male_FLOAT", "Female_FLOAT", 
-            "Male_Factor4", "Female_Factor4",
-            "Male_REST_EPISODE_COUNT_5", "Female_REST_EPISODE_COUNT_5", 
-            "Male_MOVEMENT_EPISODE_COUNT_5", "Female_MOVEMENT_EPISODE_COUNT_5", 
-            "Male_VERTICAL_EPISODE_COUNT_5", "Female_VERTICAL_EPISODE_COUNT_5", 
-            "Male_Factor2", "Female_Factor2")
-
-mcmc.files <- paste0("derived_data/posterior_samples/MCMC_", phenos)
-
-h2res <- data.frame(phenotype = phenos, 
-                    gh2_med = rep(NA, length(phenos)),
-                    gh2_sd = rep(NA, length(phenos)),
-                    gxdh2_med = rep(NA, length(phenos)),
-                    gxdh2_sd = rep(NA, length(phenos)))
-
-ensure_directory("results/posterior_densities")
-lsp.files <- file.path("results/posterior_densities", paste0(phenos, "_lsp.RDS"))
-
-for (i in 1:length(phenos)){
-  if (file.exists(lsp.files[i])) {
-    next
-  }
-  cat("Logsplining ", phenos[i], "\n")
-  post.samples <- load.to.object(mcmc.files[i])
-  h2 <- calc.h2(post.samples, burnin=1000, thin=10)
-  
-  # save median/sd of overall and GxT heritability estimates 
-  h2res[i,c(2:5)] <- c(median(h2$g), sd(h2$g), median(h2$gxt), sd(h2$gxt))
-  
-  lsp.list <- list()
-  for (var in names(h2)){
-    lsp.list[[var]]$lsp <- logspline(h2[[var]], lbound=0, ubound=1)
-  }
-  saveRDS(lsp.list, file=lsp.files[i])
-}
-
-write.csv(h2res, file = "results/posterior-h2-stats.csv")
-```
-
-
-```{r cache=TRUE, echo=FALSE}
-results <- NULL
-par(mfrow=c(1,2))
-ensure_directory("results/plots/")
-for (i in 1:length(phenos)){
-  #cat("Processing ", phenos[i], "\n")
-  post <- readRDS(lsp.files[i])
-  result.g <- calc.BF(prior=lsp.prior, post=post$g$lsp, pheno.string = phenos[i], param.string="G", plotit=FALSE)
-  post$g$bf <- result.g$BF
-  result.gxt <- calc.BF(prior=lsp.prior, post$gxt$lsp, pheno.string = phenos[i], param.string="GxT", plotit = FALSE)
-  post$gxt$bf <- result.gxt$BF
-  result.cohort <- calc.BF(prior=lsp.prior, post$cohort$lsp,pheno.string = phenos[i], param.string="cohort", plotit = FALSE)
-  post$cohort$bf <- result.cohort$BF
-  ## plotting
-  plot.post(post, prior=prior.lsp, main=sub("_LMM", "", phenos[i]))
-  if (TRUE) { ## Save plots to directory
-    pdf(file.path("results/plots", paste0(phenos[i], ".pdf")), width=4.5, height=4)
-    plot.post(post, prior=prior.lsp, main=sub("_LMM", "", phenos[i]))
-    dev.off()
-  }
-  results <- rbind(results, result.g, result.gxt, result.cohort)
-}
+saveRDS(prior, "derived_data/prior_densities_lsp.RDS")
 ```
 
 ## Tables of Bayes factors
@@ -295,25 +375,239 @@ kable(tab[tab$parameter=="cohort", -c(2,3)], row.names=FALSE)
 ```
 
 
+## Results
+
+### All posteriors
+
+The following plots show, for each phenotype/sex combination, the prior (dashed line) and posterior (full line) of ordinary heritability (G) or GxT heritability. In the title of each plot is the BF, the ratio between the dashed and full line at 0. As mentioned above, the larger the BF is above 1, the more evidence there is *against* that type of heritability being zero; BF values below 1 indicate the evidence in favor of zero heritability. 
+
+```{r cache=TRUE, echo=FALSE}
+# Convert posterior samples to logspline densities
+# mcmc.files <- list.files("derived_data/posterior_samples", full.names = TRUE)
+# phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
+
+# Use specific order of phenotypes for posterior plots
+phenos <- c("Male_HarvWeight", "Female_HarvWeight", 
+            "Male_RetroFat_norm", "Female_RetroFat_norm",
+            "Male_EpiFat_norm", "Female_EpiFat_norm", 
+            "Male_OmentalFat_norm", "Female_OmentalFat_norm",
+            "Male_Total_AUC", "Female_Total_AUC", 
+            "Male_FastGluc", "Female_FastGluc",
+            "Male_FastIns", "Female_FastIns",
+            "Male_Factor1", "Female_Factor1", 
+            "Male_ClosedJunc", "Female_ClosedJunc",
+            "Male_OpenJunc", "Female_OpenJunc", 
+            "Male_Factor3", "Female_Factor3",
+            "Male_SWIM", "Female_SWIM", 
+            "Male_CLIMB", "Female_CLIMB", 
+            "Male_FLOAT", "Female_FLOAT", 
+            "Male_Factor4", "Female_Factor4",
+            "Male_REST_EPISODE_COUNT_5", "Female_REST_EPISODE_COUNT_5", 
+            "Male_MOVEMENT_EPISODE_COUNT_5", "Female_MOVEMENT_EPISODE_COUNT_5", 
+            "Male_VERTICAL_EPISODE_COUNT_5", "Female_VERTICAL_EPISODE_COUNT_5", 
+            "Male_Factor2", "Female_Factor2")
+mcmc.files <- paste0("derived_data/posterior_samples/MCMC_", phenos)
+fav.h2 <- c("g", "gxt", "cohort", "noise", "allg", "gcoh", "gcor")
+stats <- c("_mean", "_median", "_sd", "_lower50", "_upper50", "_lower95", "_upper95")
+h2res <- matrix(nrow=length(phenos), ncol=length(stats)*length(fav.h2))
+colnames(h2res) <- paste0(rep(fav.h2, each=length(stats)),
+                          rep(stats, times=length(fav.h2)))
+h2res <- data.frame(phenotype = phenos, h2res)
+
+ensure_directory("results/posterior_densities")
+lsp.files <- file.path("results/posterior_densities", paste0(phenos, "_lsp.RDS"))
+options(warn=1) # to see where logspline falters
+for (i in 1:length(phenos)){
+  if (file.exists(lsp.files[i])){
+    next
+  }
+  cat("Logsplining ", phenos[i], ": ")
+  varsamples <- load.posterior.varsamples(mcmc.files[i], burnin=1000, thin=10)
+  lsp.list <- list()
+  for (k in 1:length(fav.h2)){
+    h2 <- fav.h2[k]
+    cat("[", h2, "]") 
+    x <- calc.h2(varsamples, type=h2)
+    # save median/sd of overall and GxT heritability estimates
+    h2res[i, 1+length(stats)*(k-1)+c(1:length(stats))] <- c(
+      mean(x),
+      median(x),
+      sd(x),
+      c(HPDinterval(as.mcmc(x), prob=.5)),
+      c(HPDinterval(as.mcmc(x), prob=.95)) )
+    # capture logspline density
+    rng <- attr(x, "range")
+    lsp.list[[h2]]$lsp <- logspline(x, lbound=rng[1], ubound=rng[2])
+    lsp.list[[h2]]$range <- rng
+  }
+  cat("\n")
+  saveRDS(lsp.list, file=lsp.files[i])
+}
+h2res$unsexed.phenotype <- sub("Male_|Female_", "", x=h2res$phenotype)
+h2res$sex <- ifelse(igrep("Female_", h2res$phenotype), "Female", "Male")
+h2res <- h2res[, c(1, ncol(h2res)-0:1, 2:(ncol(h2res)-2))]
+write.csv(h2res, file = "results/posterior-h2-stats.csv")
+
+h2lab <- expression(italic("h")^2)
+dat <- list(
+  G = list(name="G", lookup="g", xlim=0:1, xlab=h2lab),
+  GxT = list(name="GxD", lookup="gxt", xlim=0:1, xlab=h2lab),
+  allg = list(name="G+GxD", lookup="allg", xlim=0:1, xlab=h2lab),
+  cohort = list(name="Cohort", lookup="cohort", xlim=0:1, xlab=h2lab),
+  gcoh = list(name="G+Cohort", lookup="gcoh", xlim=0:1, xlab=h2lab),
+  gcor = list(name="cor(G,GxD)", lookup="gcor", xlim=c(-1,1), dashed=0, xlab="correlation"))
+ci.keys <- c("mean", "median", "lower50", "upper50", "lower95", "upper95")
+uniq.phenos <- unique(h2res$unsexed.phenotype)
+sexes <- c("Female", "Male")
+for (k in 1:length(dat)){
+  mat <- array(NA, dim=c(length(uniq.phenos), length(ci.keys), length(sexes)))
+  for (s in 1:length(sexes)){
+    icols <- match(paste0(dat[[k]]$lookup, "_", ci.keys), colnames(h2res))
+    irows <- which(h2res$sex==sexes[s])
+    mat[, , s] <- as.matrix(h2res[irows, icols])
+  }
+  dat[[k]]$mat <- mat
+}
+pdf("results/plots/ciall.pdf", width=18, height=6)
+plot.ci.multi(uniq.phenos, data=dat, vgap=0.2)  
+dev.off()
+
+dat$gcoh <- NULL
+pdf("results/plots/cipaper.pdf", width=13, height=6)
+plot.ci.multi(uniq.phenos, data=dat, vgap=0.2)  
+dev.off()
+
+```
+
+## Calculating Bayes factors
+
+```{r cache=TRUE, echo=FALSE}
+results <- NULL
+par(mfrow=c(1,2))
+ensure_directory("results/plots/")
+for (i in 1:length(phenos)){
+  pheno <- phenos[i]
+  post  <- readRDS(lsp.files[i])
+  # Calc BFs for single h2
+  result.g       <- calc.BF(prior=prior$g$lsp, post=post$g$lsp,
+                             pheno.string = pheno, param.string="G", plotit=FALSE)
+  post$g$bf      <- result.g$BF
+  result.gxt     <- calc.BF(prior=prior$gxt$lsp, post$gxt$lsp,
+                            pheno.string = pheno, param.string="GxT", plotit = FALSE)
+  post$gxt$bf    <- result.gxt$BF
+  result.cohort  <- calc.BF(prior=prior$cohort$lsp, post$cohort$lsp,
+                            pheno.string = pheno, param.string="cohort", plotit = FALSE)
+  post$cohort$bf <- result.cohort$BF
+  result.allg    <- calc.BF(prior=prior$allg$lsp, post=post$allg$lsp,
+                            pheno.string = pheno, param.string="G+GxT", plotit=FALSE)
+  post$allg$bf   <- result.allg$BF
+  result.gcoh    <- calc.BF(prior=prior$allg$lsp, post=post$gcoh$lsp,
+                            pheno.string = pheno, param.string="G+cohort", plotit=FALSE)
+  post$gcoh$bf   <- result.gcoh$BF
+  result.gcor0   <- calc.BF(prior=prior$gcor$lsp, post=post$gcor$lsp, xvalue=0,
+                            pheno.string = pheno, param.string="gcor_not0", plotit=FALSE)
+  result.gcor1   <- calc.BF(prior=prior$gcor$lsp, post=post$gcor$lsp, xvalue=1,
+                            pheno.string = pheno, param.string="gcor_not1", plotit=FALSE)
+  post$gcor$bf   <- c(result.gcor0$BF, result.gcor1$BF)
+  ## plotting
+  if (TRUE) { ## Save plots to directory
+    myplot <- function(){
+      wanted.posts <- list(
+        g      = list(post = post$g,       col = "blue",   string="G"),
+        gxt    = list(post = post$gxt,     col = "red",    string="GxT"),
+        cohort = list(post = post$cohort,  col = "orange", string="cohort"),
+        noise  = list(post = post$noise,   col = "gray",   string="noise"))
+      plot.post(wanted.posts, prior=prior$g$lsp, main=pheno)
+    }
+    pdf(file.path("results/plots", paste0(pheno, "_h2.pdf")), width=4.5, height=4)
+    myplot()
+    dev.off()
+    pdf(file.path("results/plots", paste0(pheno, "_allpost.pdf")), width=10, height=3)
+    par(mfrow=c(1,3))
+    myplot()
+    wanted.posts <- list(
+      allg = list(post = post$allg, col = "black",   string="G+GxT"),
+      gcoh = list(post = post$gcoh, col = "gray",   string="G+cohort"))
+    plot.post(wanted.posts, prior=prior$allg$lsp, main=paste0(pheno, "\naggregate heritability"))
+    wanted.posts <- list(gcor = list(post = post$gcor, col = "black",   string="rho(G,GxT)"))
+    plot.post(wanted.posts, prior=prior$gcor$lsp, main=paste0(pheno, "\ngenetic correlation"),
+              xlim=c(-1,1), xlab="genetic correlation between G and GxT effects")
+    dev.off()
+  }
+  results <- rbind(results, result.g, result.gxt, result.cohort, result.allg, result.gcoh, result.gcor0, result.gcor1)
+}
+```
+
 # Plots of Bayes factors for all phenotypes
 ```{r fig.height=8, fig.width=7, echo=FALSE, cache=TRUE}
-plot.logBFs <- function(res, ...){
-  oldpar <- par()
-  par(mar=c(5, 20, 5, 2))
-  plot(res$logBF, nrow(res):1, axes=FALSE, ylab="", type="o", pch=c(1,1,19,19), ...)
-  axis(2, at=nrow(res):1, labels=res$phenotype, las=1)
-  abline(v=c(-1,0,1), lty=2, col=c("gray", "black", "gray"))
-  axis(1)
-  axis(3)
-}
+
+par(mfrow=c(1,1))
 plot.logBFs(results[results$parameter=="G", ], main="logBF for G", 
             xlab="logBF for G", xlim=c(-2,10))
+
 cat("\n\n\n\n\n\n\n") # force plots on separate pages
 plot.logBFs(results[results$parameter=="GxT", ], main="logBF for GxT", 
             xlab="logBF for GxT", xlim=c(-2,3))
+
 cat("\n\n\n\n\n\n\n") # force plots on separate pages
 plot.logBFs(results[results$parameter=="cohort", ], main="logBF for cohort", 
             xlab="logBF for cohort", xlim=c(-2,6))
+
+results$unsexed.phenotype <- sub("Male_|Female_", "", x=results$phenotype)
+results$sex <- ifelse(igrep(pattern="Female", x=results$phenotype), "Female", "Male")
+ifem <- igrep(pattern="Female", x=results$phenotype)
+uniq.phenos <- unique(results$unsexed.phenotype)
+
+pdf("results/plots/bf.pdf", width=7, height=6)
+iparm <- results$parameter=="G"
+plot.logBFs.paired(uniq.phenos, results$logBF[ifem & iparm], results$logBF[!ifem & iparm], main="G")
+
+iparm <- results$parameter=="GxT"
+plot.logBFs.paired(uniq.phenos, results$logBF[ifem & iparm], results$logBF[!ifem & iparm], main="GxT")
+
+iparm <- results$parameter=="G+GxT"
+plot.logBFs.paired(uniq.phenos, results$logBF[ifem & iparm], results$logBF[!ifem & iparm], main="G+GxT")
+
+iparm <- results$parameter=="cohort"
+plot.logBFs.paired(uniq.phenos, results$logBF[ifem & iparm], results$logBF[!ifem & iparm], main="Cohort")
+
+iparm <- results$parameter=="G+cohort"
+plot.logBFs.paired(uniq.phenos, results$logBF[ifem & iparm], results$logBF[!ifem & iparm], main="G+Cohort")
+dev.off()
+
+pdf("results/plots/bfall.pdf", width=18, height=6)
+xlab <- expression(paste(log[10], "BF"))
+dat <- list(
+  G =list(name="G", lookup="G", xlab=xlab),
+  GxT=list(name="GxT", lookup="GxT", xlab=xlab),
+  gall=list(name="G+GxT", lookup="G+GxT", xlab=xlab),
+  cohort=list(name="cohort", lookup="cohort", xlab=xlab),
+  gcoh=list(name="G+Cohort", lookup="G+cohort", xlab=xlab),
+  gcor0=list(name="cor(G,GxD) not 0", lookup="gcor_not0", xlab=xlab),
+  gcor1=list(name="cor(G,GxD) not 1", lookup="gcor_not1", xlab=xlab))
+for (k in 1:length(dat)){
+  iparm <- results$parameter==dat[[k]]$lookup
+  dat[[k]]$mat <- cbind(results$logBF[ifem & iparm], y2=results$logBF[!ifem & iparm])
+}
+plot.logBFs.paired.multi(uniq.phenos, dat)
+dev.off()
+
+pdf("results/plots/bfpaper.pdf", width=12, height=6)
+dat <- list(
+  G =list(name="G", lookup="G", xlab=xlab),
+  GxT=list(name="GxT", lookup="GxT", xlab=xlab),
+  gall=list(name="G+GxT", lookup="G+GxT", xlab=xlab),
+  cohort=list(name="cohort", lookup="cohort", xlab=xlab))
+#  gcor0=list(name="gcor not 0", lookup="gcor_not0", xlab=xlab),
+#  gcor1=list(name="gcor not 1", lookup="gcor_not1", xlab=xlab))
+for (k in 1:length(dat)){
+  iparm <- results$parameter==dat[[k]]$lookup
+  dat[[k]]$mat <- cbind(results$logBF[ifem & iparm], y2=results$logBF[!ifem & iparm])
+}
+plot.logBFs.paired.multi(uniq.phenos, dat)
+dev.off()
+
+
 ```
 ```{r}
 write.csv(results, file="results/BF_results.csv")
