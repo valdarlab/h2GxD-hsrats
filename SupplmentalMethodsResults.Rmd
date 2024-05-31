@@ -1,17 +1,21 @@
 ---
 title: "Supplemental Methods and Results"
-author: "Risemberg, ..., Valdar, Solberg Woods"
+author: "Deal AW, Risemberg EL, Thurman A, ..., Valdar W, Solberg Woods LC"
 date: "May 21, 2024"
 toc: true
+number-sections: true
 output:
   pdf_document:
     fig_height: 6
     fig_width: 10
+    number-sections: true
+    number-depth: 2
   word_document: default
   html_document:
     toc-location: body
     toc-depth: 3
     toc-title: Contents
+    number-sections: true
 ---
 
 # Introduction to Bayes Factors
@@ -24,17 +28,17 @@ where $p(\text{data}|M_1)$ is the marginal likelihood of the data given model $M
 
 ## Savage-Dickey method
 
-Marginal likelihoods are difficult to calculate in most cases. However, Savage and Dickey (19??) showed that if $M_0$ and $M_1$ differ by a single parameter, specifically if, $M_0$ is simply $M_1$ with $\theta=0$, then the BF can be calculated as the following ratio of $M_1$'s prior and posterior:
+Marginal likelihoods are difficult to calculate in most cases. However, Dickey & Lientz (1970, *Annal Math Stat* 41(1):214-226) showed that if $M_0$ and $M_1$ differ by a single parameter, specifically if, $M_0$ is simply $M_1$ with $\theta=0$, then the BF can be calculated as the following ratio of $M_1$'s prior and posterior:
 $$
   \text{BF}=\frac{p(\theta=0)}{p(\theta=0|\text{data})} \tag{2}
 $$
-where $p(\theta=0)$ is the prior probability density that $\theta=0$, and $p(\theta=0|\text{data})$ is the posterior density of $\theta_0$. 
+where $p(\theta=0)$ is the prior probability density that $\theta=0$, and $p(\theta=0|\text{data})$ is the posterior density $\theta=0$. 
 
-Informal proof: When analyzing the data using $M_1$, the posterior probability that $\theta=0$ is
+*Informal proof*: When analyzing the data using $M_1$, the posterior probability that $\theta=0$ is
 $$
     p(\theta=0|\text{data},M_1) = \frac{p(\text{data}|\theta=0,M_1)\,p(\theta=0|M_1)}{p(\text{data}|M_1)}\,. \tag{3}
 $$
-However, owing the definition of $M_0$ (and assuming certain conditions), it is also the case that
+However, if $M_0$ equivalent to $M_1$ with constraint $\theta=0$ (and assuming certain conditions), it is also the case that
 $$
     p(\text{data}|\theta=0, M_1)=p(\text{data}|M_0)\,. \tag{4}
 $$
@@ -42,36 +46,67 @@ Substituting (4) into (3) and rearranging easily yeilds (1) and (2).
 
 ## Interpretation
 
-If BF>1 then this must be because the posterior for $\theta=0$ is lower than the prior, ie, data is providing evidence against $\theta=0$ and towards $\theta\neq 0$. If BF<1, then the data provides evidence for $\theta=0$. If BF=1, then the data has given us no information regarding $\theta$.
-
-In the HS rat project, we want to quantify the evidence against ordinary heritability (G) being zero, and against GxT heritability being zero. So in each case, we can plot the prior and posteriors for the parameter in question, and see how the evidence for the parameter (G or GxT) being zero changes from prior to posterior, quantifying this with the BF, where BF>1 is evidence that G (or GxT) exists. 
+If BF>1 then this must be because the posterior for $\theta=0$ is lower than the prior, ie, data is providing evidence against $\theta=0$ and towards $\theta\neq 0$. If BF<1, then the data provides evidence for $\theta=0$. If BF=1, then the data has given us no information regarding $\theta$. In this project, we want to quantify the evidence for diet-specific polygenic effects, namely GxD heritability, being non-zero, as well as other types of heritability-related effects being non-zero. So in each case, we can plot the prior and posteriors for the parameter in question, and see how the evidence for the parameter representing GxD heritability being zero changes from prior to posterior, quantifying this with the BF, where BF>1 is evidence that GxD exists.
 
 Obviously, a BF of just over 1 is still not that interesting, so we need a way to match BF values with scientific interpretations. Kass and Raftery (1995) proposed the following scale:
 
-BF      1/BF      $\log_{10}$BF  Interpretation
-------  --------- -----------    --------------
-1-3.2   1-0.3     0-1/2          Not worth mentioning
-3.2-10  0.3-0.1   1/2-1          Substantial 
-10-100  0.1-0.001 1-2            Strong
-$>100$  <0.001    >2             Decisive
+BF      $\log_{10}$BF  Interpretation
+------  -----------    --------------
+1-3.2   0-1/2          Not worth mentioning
+3.2-10  1/2-1          Substantial
+10-100  1-2            Strong
+$>100$  >2             Decisive
 
-with evidence for zero (ie, against G or GxT) being the corresponding reciprocals of these numbers.
+: Bayes factor interpretation of Kass & Raftery (1995)
+
+with evidence for the parameter being zero being the corresponding reciprocals of these numbers.
+
+BF        $\log_{10}$BF  Interpretation
+------    -----------    --------------
+<0.001    > -2           Decisive against GxD
+0.001-0.1 -1 to -2       Strong against GxD
+0.1-0.3   -1/2 to -1     Substantial against GxD
+0.3-3.2   -1/2 to +1/2   Not worth mentioning / not enough information
+3.2-10    1/2 to 1       Substantial for GxD
+10-100    1 to 2         Strong for GxD
+$>100$    >2             Decisive for GxD
+
+: Interpretation of Bayes factors for the polygene by diet (GxD) effect
 
 # Posterior Analysis
 
-## Estimating implied priors from prior samples
+## Estimating implied priors for heritability from prior samples of variances
 
 The analysis focuses on quantities, namely heritabilities, that are not modeled directly but are rather functionals of directly modeled parameters, namely the variances. As such, priors directly specified for the variances imply the priors for the heritabilities; that is, the heritability priors are not specified directly, they are implied, and since the Savage-Dickey method requires prior densities for quantities of interest, the implied priors for heritabilities must themselves be inferred.
 
-The prior used for each variance parameter  $v\in\{\sigma^2, \sigma^2_\text{cohort}, \sigma^2_\text{G}, \sigma^2_\text{GxT}\}$ was an inverse gamma with shape=-1 and rate=0. Heritabilty was defined as the fraction
+### Recap on heritabilities measured
+
+The prior used for each variance parameter  $v\in\{\sigma^2, \sigma^2_\text{cohort}, \sigma^2_\text{G}, \sigma^2_\text{GxD}\}$ was an inverse gamma with shape=-1 and rate=0. Standard additive, polygenic heritability was defined as the fraction
 $$
-  h^2 = \frac{\sigma^2_\text{G}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxT}}\,,
+  h^2_G = \frac{\sigma^2_\text{G}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxD}}\,,
 $$
-and GxT heritability as the fraction
+and GxD heritability as the fraction
 $$
-  h^2_\text{GxT} = \frac{\sigma^2_\text{GxT}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxT}}\,.
+  h^2_\text{GxD} = \frac{\sigma^2_\text{GxD}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxD}}\,.
 $$
-The implicit prior on either of these fractions is estimated by sampling from the prior and calculating the fraction. This gives density below:
+[Note: 1) the above definitions are specific to the coding of the diet variable used in this model, and as such are simpler than the more general formulation described in the main manuscript; 2) the code below uses the variable GxT referring to a gene-by-treatment effect where diet happens to be the treatment in this experiment.] 
+
+We also consider a metric describing the combined variance explained by genetics and GxD, defined as 
+$$
+  h^2_\text{G+GxD} = \frac{\sigma^2_\text{G}+\sigma^2_\text{GxD}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxD}}\,.
+$$
+
+Last, under certain assumptions, we can calculate the genetic correlation between polygenic genetic effects and polygenic GxD effects as
+$$
+    \rho = \frac{ \sigma^2_\text{G} - \sigma^2_\text{GxD} }{ \sigma^2_\text{G} + \sigma^2_\text{GxD} }\,.
+$$
+
+The function to calculate these quantities from the variances is:
+```r
+{{< include calch2.R >}}
+```
+
+The implicit prior on any of these quantities is estimated by sampling variances from the prior and then calculating the quantity from those variances (ie, as a functional). This gives the following densities:
 
 ```{r}
 #| cache: false
@@ -79,11 +114,10 @@ The implicit prior on either of these fractions is estimated by sampling from th
 library(logspline)
 library(coda)
 source("utils.R")
+source("calch2.R")
+source("calcbf.R")
 source("posterior_analysis_utils.R")
-```
-```{r}
-#| cache: true
-#| code-fold: true
+
 # get samples from the prior
 varsamples <- readRDS("derived_data/prior_variance_samples.RDS")
 varsamples <- as.data.frame(varsamples)
@@ -97,42 +131,34 @@ rng <- attr(x, "range")
 prior$g      <- list(lsp=logspline(x[1:1e6], lbound=rng[1], ubound=rng[2]), range=rng)
 prior$gxt    <- prior$g
 prior$cohort <- prior$g
-plot(prior$g$lsp, lty=3, xlim=rng, main="Single component heritability prior",
+plot(prior$g$lsp, xlim=rng, main="Single component heritability prior",
      xlab="heritability", ylab="density", las=1)
-```
-We also consider a metric describing the combined variance explained by genetics and GxT, defined as 
-$$
-  h^2_\text{G+GxT} = \frac{\sigma^2_\text{G}+\sigma^2_\text{GxT}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxT}}\,,
-$$
-which has the implied prior density:
-```{r}
-#| code-fold: true
+
 # allg prior, ie, g + gxt (sum of two h2 terms)
 x <- calc.h2(varsamples, type="allg")
 rng <- attr(x, "range")
 prior$allg <- list(lsp=logspline(x[1:1e5], lbound=rng[1], ubound=rng[2]), range=rng)
-plot(prior$allg$lsp, lty=3, xlim=rng, main="G + GxT combined heritability prior",
+plot(prior$allg$lsp, xlim=rng, main="G + GxD combined heritability prior",
      xlab="combined heritability", ylab="density", las=1)
-```
-Last, under certain assumptions, we can calculate the genetic correlation between polygenic genetic effects and polygenic GxT effects as
-$$
-    \rho = \frac{ \sigma^2_\text{G} - \sigma^2_\text{GxT} }{ \sigma^2_\text{G} + \sigma^2_\text{GxT} }\,,
-$$
-which has implied prior density:
-```{r}
-#| code-fold: true
+
 # gcor, ie, genetic correlation between hfd vs non-hfd individuals
 x <- calc.h2(varsamples, type="gcor")
 rng <- attr(x, "range")
 prior$gcor$lsp <- logspline(x[1:1e5], lbound=rng[1], ubound=rng[2])
-plot(prior$gcor$lsp, lty=3, xlim=rng, main="Correlation between G and GxT effects",
+plot(prior$gcor$lsp, xlim=rng, main="Correlation between G and GxD effects",
      xlab="correlation coefficient", ylab="density", las=1)
 saveRDS(prior, "derived_data/prior_densities_lsp.RDS")
 ```
 
+
+## Estimating heritability posteriors from MCMC samples
+
+The following code was used to calculate logspline densities and summaries of the heritability posteriors from MCMC samples of the posterior variances:
 ```{r}
+#| warning: false
 #| cache: true
-#| code-fold: true
+#| results: false
+
 # phenotypes in their preferred order with display text
 pheno.names <- list(
   HarvWeight = "Final body weight",
@@ -164,68 +190,11 @@ PhenoNameCode2Long <- function(x){
   c(unlist(pheno.names[x]))
 }
 
-```
-
-<!-- ## Tables of Bayes factors -->
-
-<!-- The table below also gives the logBF, which is the logarithm to the base 10 of the BF. In this case, logBF=0 is no evidence, logBF>0 is positive evidence, logBF>0 is evidence against. -->
-
-<!-- Re-order phenotypes for tables:  -->
-
-<!-- ```{r echo=FALSE, cache=TRUE, exec=FALSE} -->
-<!-- phenos <- c("Male_HarvWeight", "Male_RetroFat_norm", "Male_EpiFat_norm", -->
-<!--             "Male_OmentalFat_norm", "Male_Total_AUC", "Male_FastGluc", "Male_FastIns", -->
-<!--             "Male_Factor1", "Male_ClosedJunc", "Male_OpenJunc", "Male_Factor3",  -->
-<!--             "Male_SWIM", "Male_CLIMB", "Male_FLOAT", "Male_Factor4",  -->
-<!--             "Male_REST_EPISODE_COUNT_5", "Male_MOVEMENT_EPISODE_COUNT_5",  -->
-<!--             "Male_VERTICAL_EPISODE_COUNT_5", "Male_Factor2",  -->
-<!--             "Female_HarvWeight", "Female_RetroFat_norm", "Female_EpiFat_norm",  -->
-<!--             "Female_OmentalFat_norm", "Female_Total_AUC", "Female_FastGluc", "Female_FastIns", -->
-<!--             "Female_Factor1", "Female_ClosedJunc", "Female_OpenJunc", "Female_Factor3", -->
-<!--             "Female_SWIM", "Female_CLIMB", "Female_FLOAT", "Female_Factor4", -->
-<!--             "Female_REST_EPISODE_COUNT_5", "Female_MOVEMENT_EPISODE_COUNT_5",  -->
-<!--             "Female_VERTICAL_EPISODE_COUNT_5", "Female_Factor2") -->
-
-<!-- results$phenotype <- factor(results$phenotype, levels = phenos) -->
-<!-- results <- results[order(results$phenotype),] -->
-<!-- ``` -->
-
-<!-- ### Bayes factors for ordinary heritability (G) -->
-<!-- ```{r echo=FALSE, cache=TRUE} -->
-<!-- tab <- results -->
-<!-- tab$BF <- formatC(tab$BF, digits=5, drop0trailing=TRUE, big.mark=",") -->
-<!-- tab$logBF <- round(tab$logBF, digits=3) -->
-<!-- tab$prior.at.x <- round(tab$prior.at.x, digits=3) -->
-<!-- tab$post.at.x <- round(tab$post.at.x, digits=3) -->
-<!-- kable(tab[tab$parameter=="G", -c(2,3)], row.names=FALSE) -->
-<!-- ``` -->
-
-<!-- ### Bayes factors for GxT heritabilty (GxT) -->
-<!-- ```{r echo=FALSE} -->
-<!-- kable(tab[tab$parameter=="GxT", -c(2,3)], row.names=FALSE) -->
-<!-- ``` -->
-
-<!-- ### Bayes factors for cohort effect -->
-<!-- ```{r echo=FALSE} -->
-<!-- kable(tab[tab$parameter=="cohort", -c(2,3)], row.names=FALSE) -->
-<!-- ``` -->
-
-
-## Estimating posteriors from MCMC samples
-
-```{r}
-#| warning: false
-#| cache: true
-#| results: false
 # Convert posterior samples to logspline densities
-# mcmc.files <- list.files("derived_data/posterior_samples", full.names = TRUE)
-# phenos <- sub("_LMM", "", sub("MCMC_", "", basename(mcmc.files)))
-
-# Use specific order of phenotypes for posterior plots
-
 phentab <- data.frame(
   unsexed.phenotype = rep(GetPhenoCodeNames(), each=2),
-  sex = rep(c("Male", "Female"), times=length(GetPhenoCodeNames)))
+  sex = rep(c("Male", "Female"), times=length(GetPhenoCodeNames()))
+)
 phentab$phenosex <- paste(sep="_", phentab$sex, phentab$unsexed.phenotype)
 fav.h2 <- c("g", "gxt", "cohort", "noise", "allg", "gcoh", "gcor")
 stats <- c("_mean", "_median", "_sd", "_lower50", "_upper50", "_lower95", "_upper95")
@@ -258,7 +227,7 @@ for (i in 1:nrow(h2res)){
     h2 <- fav.h2[k]
     cat("[", h2, "]") 
     x <- calc.h2(varsamples, type=h2)
-    # save median/sd of overall and GxT heritability estimates
+    # save median/sd of overall and GxD heritability estimates
     h2res[i, length(descols)+length(stats)*(k-1)+c(1:length(stats))] <- c(
       mean(x),
       median(x),
@@ -277,7 +246,10 @@ for (i in 1:nrow(h2res)){
 write.csv(h2res, file = "results/posterior-h2-stats.csv")
 ```
 
-## MCMC diagnostics: posterior correlations of variance parameters
+### MCMC diagnostics: posterior correlations of variance parameters
+
+Diagnostics of the MCMC chains show that the strongest correlations between parameters in the posterior (and therefore the greatest source of ambiguity) were between G and noise, and between GxD and noise. There was minimal correlation between either G or GxD and cohort.
+
 ```{r}
 #| warning: false
 #| fig-width: 10
@@ -294,14 +266,18 @@ ggparcoord(corrs, columns=(length(descols)+1):ncol(corrs),
   scale_color_manual(values=rainbow(length(unique(corrs$unsexed.phenotype))))
 ```
 
-## Parameter estimates and credible intervals
+### Parameter estimates and credible intervals
+
+The plot below summarizes the posterior distributions of estimated heritability-like quantities. For each phenotype and estimated quantity, in red (females) and blue (males), is represented the 95% credible interval (thin line), the 50% credible interval (thick line), the posterior mean (vertical "|" bar), and the posterior median (white gap).
+
 ```{r}
+#| echo: false
 #| code-fold: true
 #| warning: false
 h2lab <- expression(italic("h")^2)
 dat <- list(
   G = list(name="G", lookup="g", xlim=0:1, xlab=h2lab),
-  GxT = list(name="GxD", lookup="gxt", xlim=0:1, xlab=h2lab),
+  GxD = list(name="GxD", lookup="gxt", xlim=0:1, xlab=h2lab),
   allg = list(name="G+GxD", lookup="allg", xlim=0:1, xlab=h2lab),
   cohort = list(name="Cohort", lookup="cohort", xlim=0:1, xlab=h2lab),
   gcoh = list(name="G+Cohort", lookup="gcoh", xlim=0:1, xlab=h2lab),
@@ -321,6 +297,7 @@ for (k in 1:length(dat)){
 ```
 
 ```{r}
+#| echo: false
 #| fig-width: 16
 #| fig-height: 7
 #| warning: false
@@ -337,11 +314,24 @@ plot.ci.multi(PhenoNameCode2Long(uniq.phenos), data=dat, vgap=0.2)
 dev.off()
 ```
 
-<!-- ![CIs from paper](results/plots/cipaper.pdf){.lightbox} -->
 
-## Posterior distributions and Bayes factors
+## Bayes factors
 
-The following plots show, for each phenotype/sex combination, the prior (dashed line) and posterior (full line) of ordinary heritability (G) or GxT heritability. In the title of each plot is the BF, the ratio between the dashed and full line at 0. As mentioned above, the larger the BF is above 1, the more evidence there is *against* that type of heritability being zero; BF values below 1 indicate the evidence in favor of zero heritability. 
+## Calculating Bayes factors
+
+Bayes factors were calculated using the Savage-Dickey method. The prior and posterior density at a given point was estimated by first converting the prior or posterior samples to a logspline density, and then reading off the estimated height at the desired parameter value:
+
+```r
+{{< include calcbf.R >}}
+```
+
+### Visualizing each Bayes factor with its corresponding posterior distribution
+
+In the following plots show, for each phenotype/sex combination is shown three plots:
+
+1. The prior (dashed line) and posteriors (full lines) of different types of heritability (G, GxD, or cohort and noise, expressed as heritability-like proportions); here the BFs of G, GxD and cohort against 0 are given in the legend. 
+2. The prior (dashed line) and posteriors (full lines) for the aggregate heritability (G + GxD), and also another measure, G+cohort, measured to investigate whether cohort and G are measuring the same thing.
+3. The prior (dashed line) and posterior (full line) for the correlation between the polygenic effects in an LFD rat vs its HFD counterfactual, where correlation of 0 suggests those effects differ substantially (ie, GxT is present) while a correlation of 1 suggests they are identical (ie, diet does not impact the effect of polygenes); BFs are given against 0 (BF.0; ie, high BFs imply less GxT) and against 1 (BF.1; ie, high BFs imply more GxT).
 
 ```{r}
 #| warning: false
@@ -355,34 +345,37 @@ for (i in 1:length(phentab$phenosex)){
   post  <- readRDS(lsp.files[i])
   # Calc BFs for single h2
   result.g       <- calc.BF(prior=prior$g$lsp, post=post$g$lsp,
-                             pheno.string = pheno, param.string="G", plotit=FALSE)
+                             pheno.string = pheno, param.string="g")
   post$g$bf      <- result.g$BF
   result.gxt     <- calc.BF(prior=prior$gxt$lsp, post$gxt$lsp,
-                            pheno.string = pheno, param.string="GxT", plotit = FALSE)
+                            pheno.string = pheno, param.string="gxt")
   post$gxt$bf    <- result.gxt$BF
   result.cohort  <- calc.BF(prior=prior$cohort$lsp, post$cohort$lsp,
-                            pheno.string = pheno, param.string="cohort", plotit = FALSE)
+                            pheno.string = pheno, param.string="cohort")
   post$cohort$bf <- result.cohort$BF
   result.allg    <- calc.BF(prior=prior$allg$lsp, post=post$allg$lsp,
-                            pheno.string = pheno, param.string="G+GxT", plotit=FALSE)
+                            pheno.string = pheno, param.string="allg")
   post$allg$bf   <- result.allg$BF
   result.gcoh    <- calc.BF(prior=prior$allg$lsp, post=post$gcoh$lsp,
-                            pheno.string = pheno, param.string="G+cohort", plotit=FALSE)
+                            pheno.string = pheno, param.string="gcoh")
   post$gcoh$bf   <- result.gcoh$BF
   result.gcor0   <- calc.BF(prior=prior$gcor$lsp, post=post$gcor$lsp, xvalue=0,
-                            pheno.string = pheno, param.string="gcor_not0", plotit=FALSE)
+                            pheno.string = pheno, param.string="gcor_not0")
   result.gcor1   <- calc.BF(prior=prior$gcor$lsp, post=post$gcor$lsp, xvalue=1,
-                            pheno.string = pheno, param.string="gcor_not1", plotit=FALSE)
+                            pheno.string = pheno, param.string="gcor_not1")
   post$gcor$bf   <- c(result.gcor0$BF, result.gcor1$BF)
   ## plotting
   if (TRUE) { ## Save plots to directory
+    readable.pheno <- PhenoNameCode2Long(phentab$unsexed.phenotype[i])
+    sex <- phentab$sex[i]
     myplot <- function(){
       wanted.posts <- list(
         g      = list(post = post$g,       col = "blue",   string="G"),
-        gxt    = list(post = post$gxt,     col = "red",    string="GxT"),
+        gxt    = list(post = post$gxt,     col = "red",    string="GxD"),
         cohort = list(post = post$cohort,  col = "orange", string="cohort"),
         noise  = list(post = post$noise,   col = "gray",   string="noise"))
-      plot.post(wanted.posts, prior=prior$g$lsp, main=pheno)
+      plot.post(wanted.posts, prior=prior$g$lsp,
+                main=paste0(readable.pheno, " in ", tolower(sex), "s"))
     }
     pdf(file.path("results/plots", paste0(pheno, "_h2.pdf")), width=4.5, height=4)
     myplot()
@@ -391,12 +384,15 @@ for (i in 1:length(phentab$phenosex)){
     par(mfrow=c(1,3))
     myplot()
     wanted.posts <- list(
-      allg = list(post = post$allg, col = "black",   string="G+GxT"),
+      allg = list(post = post$allg, col = "black",   string="G+GxD"),
       gcoh = list(post = post$gcoh, col = "gray",   string="G+cohort"))
-    plot.post(wanted.posts, prior=prior$allg$lsp, main=paste0(pheno, "\naggregate heritability"))
-    wanted.posts <- list(gcor = list(post = post$gcor, col = "black",   string="rho(G,GxT)"))
-    plot.post(wanted.posts, prior=prior$gcor$lsp, main=paste0(pheno, "\ngenetic correlation"),
-              xlim=c(-1,1), xlab="genetic correlation between G and GxT effects")
+    plot.post(wanted.posts, prior=prior$allg$lsp,
+              main=paste0(pheno, "\naggregate heritability"))
+    wanted.posts <- list(gcor = list(post = post$gcor, col = "black",
+                                     string="rho(G,GxD)"))
+    plot.post(wanted.posts, prior=prior$gcor$lsp,
+              main=paste0(pheno, "\ngenetic correlation"),
+              xlim=c(-1,1), xlab="genetic correlation between G and GxD effects")
 #    dev.off()
   }
   results <- rbind(results, result.g, result.gxt, result.cohort, result.allg,
@@ -404,9 +400,10 @@ for (i in 1:length(phentab$phenosex)){
 }
 ```
 
-## Bayes factor summaries
+### Bayes factor summaries
 
 ```{r}
+#| echo: false
 #| code-fold: true
 #| warning: false
 #| fig-width: 16
@@ -420,11 +417,11 @@ uniq.phenos <- unique(results$unsexed.phenotype)
 # dev.off()
 xlab <- expression(paste(log[10], "BF"))
 dat <- list(
-  G =list(name="G", lookup="G", xlab=xlab),
-  GxT=list(name="GxT", lookup="GxT", xlab=xlab),
-  gall=list(name="G+GxT", lookup="G+GxT", xlab=xlab),
+  G =list(name="G", lookup="g", xlab=xlab),
+  GxD=list(name="GxD", lookup="gxt", xlab=xlab),
+  gall=list(name="G+GxD", lookup="allg", xlab=xlab),
   cohort=list(name="cohort", lookup="cohort", xlab=xlab),
-  gcoh=list(name="G+Cohort", lookup="G+cohort", xlab=xlab),
+  gcoh=list(name="G+Cohort", lookup="gcoh", xlab=xlab),
   gcor0=list(name="cor(G,GxD) not 0", lookup="gcor_not0", xlab=xlab),
   gcor1=list(name="cor(G,GxD) not 1", lookup="gcor_not1", xlab=xlab))
 for (k in 1:length(dat)){
@@ -432,12 +429,17 @@ for (k in 1:length(dat)){
   dat[[k]]$mat <- cbind(results$logBF[ifem & iparm], y2=results$logBF[!ifem & iparm])
 }
 plot.logBFs.paired.multi(PhenoNameCode2Long(uniq.phenos), dat)
+```
 
+```{r}
+#| echo: false
+#| warning: false
+#| results: false
 pdf("results/plots/bfpaper.pdf", width=12, height=6)
 dat <- list(
-  G =list(name="G", lookup="G", xlab=xlab),
-  GxT=list(name="GxT", lookup="GxT", xlab=xlab),
-  gall=list(name="G+GxT", lookup="G+GxT", xlab=xlab),
+  G =list(name="G", lookup="g", xlab=xlab),
+  GxD=list(name="GxD", lookup="gxt", xlab=xlab),
+  gall=list(name="G+GxD", lookup="allg", xlab=xlab),
   cohort=list(name="cohort", lookup="cohort", xlab=xlab))
 #  gcor0=list(name="gcor not 0", lookup="gcor_not0", xlab=xlab),
 #  gcor1=list(name="gcor not 1", lookup="gcor_not1", xlab=xlab))
@@ -447,10 +449,42 @@ for (k in 1:length(dat)){
 }
 plot.logBFs.paired.multi(PhenoNameCode2Long(uniq.phenos), dat)
 dev.off()
-
 ```
 ```{r}
 write.csv(results, file="results/BF_results.csv")
 ```
+
+## Tables of posterior summaries and Bayes factors
+
+```{r}
+#| echo: false
+kab.summary <- function(lookup, lookup.bf=lookup, string,
+                        string.bf="Bayes factor is in favor of quantity being non-zero."){
+  h <- h2res[, grep(colnames(h2res), pattern=paste0("^", lookup, "_"))]
+  colnames(h) <- sub(".*_", "", colnames(h))
+  h <- round(h, digits=3)
+  d <- data.frame(phenotype=PhenoNameCode2Long(h2res$unsexed.phenotype),
+                  sex=substr(h2res$sex, start=0, stop=1),
+                  meanmed=paste0(h$mean, " (", median=h$median, ")"),
+                  ci95 = paste0("(", h$lower95, ", ", h$upper95, ")"))
+  r <- results[results$parameter==lookup.bf, ]
+  stopifnot(all(h$phenosex==r$phenotype))
+  d$logBF <- round(r$logBF, digits=3)
+  knitr::kable(d,
+               caption=paste0("Posterior summaries and Bayes factors for ",
+                              string, ". ", string.bf, ". Values are rounded to 3 decimal places."),
+               col.names=c("Phenotype", "Sex", "Mean (median)", "95% HPD interval",
+                           "$\\log_{10}$BF"))
+}
+
+kab.summary(lookup="g", string="additive genetics (G)")
+kab.summary(lookup="gxt", string="gene by diet (GxD)")
+kab.summary(lookup="allg", string="G+GxD")
+kab.summary(lookup="cohort", string="cohort effect")
+kab.summary(lookup="gcor", lookup.bf="gcor_not1",
+            string="correlation between polygenic effects in LFD vs HFD",
+            string.bf="Bayes factor is *against* perfect correlation.")
+```
+
 
 
