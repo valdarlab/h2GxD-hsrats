@@ -81,7 +81,7 @@ The analysis focuses on quantities, namely heritabilities, that are not modeled 
 
 ### Recap on heritabilities measured
 
-The prior used for each variance parameter  $v\in\{\sigma^2, \sigma^2_\text{cohort}, \sigma^2_\text{G}, \sigma^2_\text{GxD}\}$ was an inverse gamma with shape=-1 and rate=0. Standard additive, polygenic heritability was defined as the fraction
+The prior used for each variance parameter  $v\in\{\sigma^2, \sigma^2_\text{cohort}, \sigma^2_\text{G}, \sigma^2_\text{GxD}\}$ was an inverse gamma with shape=-1 and rate=0. Diet-neutral heritability was defined as the fraction
 $$
   h^2_G = \frac{\sigma^2_\text{G}}{\sigma^2 + \sigma^2_\text{cohort} + \sigma^2_\text{G} + \sigma^2_\text{GxD}}\,,
 $$
@@ -450,6 +450,7 @@ for (k in 1:length(dat)){
 plot.logBFs.paired.multi(PhenoNameCode2Long(uniq.phenos), dat)
 dev.off()
 ```
+
 ```{r}
 write.csv(results, file="results/BF_results.csv")
 ```
@@ -477,8 +478,8 @@ kab.summary <- function(lookup, lookup.bf=lookup, string,
                            "$\\log_{10}$BF"))
 }
 
-kab.summary(lookup="g", string="additive genetics (G)")
-kab.summary(lookup="gxt", string="gene by diet (GxD)")
+kab.summary(lookup="g", string="diet neutral genetics (G)")
+kab.summary(lookup="gxt", string="gene-by-diet (GxD)")
 kab.summary(lookup="allg", string="G+GxD")
 kab.summary(lookup="cohort", string="cohort effect")
 kab.summary(lookup="gcor", lookup.bf="gcor_not1",
